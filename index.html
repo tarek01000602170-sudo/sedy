@@ -6,6 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0ea5e9" />
   <title>نظام ERP + متجر + CRM</title>
+  <!-- استدعاء مكتبات Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <link rel="manifest"
     href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22ERP%20System%22%2C%22short_name%22%3A%22ERP%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230b1220%22%2C%22theme_color%22%3A%22%230ea5e9%22%2C%22icons%22%3A%5B%5D%7D">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -981,7 +984,10 @@
       appId: "1:1034684215735:web:0f29e77e15880497eef832",
       measurementId: "G-H6WJTKH2VF"
     };
-    const USE_FIREBASE = false; // auto-set true when FIREBASE_CONFIG filled
+    const USE_FIREBASE = true; // auto-set true when FIREBASE_CONFIG filled
+    // تهيئة فيرباس
+    firebase.initializeApp(FIREBASE_CONFIG);
+    const db = firebase.firestore();
 
     const State = {
       user: null,
@@ -1015,9 +1021,50 @@
     =========================================================== */
     const Store = {
       KEY: 'erp_data_v1',
-      load() { try { const d = JSON.parse(localStorage.getItem(this.KEY)); if (d) State.data = d; } catch (e) { } },
-      save() { localStorage.setItem(this.KEY, JSON.stringify(State.data)); },
-      reset() { localStorage.removeItem(this.KEY); seedDemo(); this.save(); }
+
+      // حفظ البيانات
+      async save() {
+        // 1. الحفظ في المتصفح (للسرعة)
+        localStorage.setItem(this.KEY, JSON.stringify(State.data));
+
+        // 2. الحفظ في فيرباس (للمزامنة)
+        if (USE_FIREBASE) {
+          try {
+            await db.collection('settings').doc('main_data').set(State.data);
+            console.log("تم الحفظ في فيرباس ✅");
+          } catch (e) {
+            console.error("خطأ في حفظ فيرباس: ", e);
+          }
+        }
+      },
+
+      // تحميل البيانات
+      async load() {
+        // تحميل أولي من المتصفح
+        try {
+          const localData = JSON.parse(localStorage.getItem(this.KEY));
+          if (localData) State.data = localData;
+        } catch (e) { }
+
+        // تحميل من فيرباس إذا كان متاحاً
+        if (USE_FIREBASE) {
+          db.collection('settings').doc('main_data').onSnapshot((doc) => {
+            if (doc.exists) {
+              State.data = doc.data();
+              console.log("تم تحديث البيانات من فيرباس ☁️");
+              render(); // إعادة رسم الصفحة بالبيانات الجديدة
+            }
+          });
+        }
+      },
+
+      reset() {
+        if (confirm("سيتم حذف كل البيانات من السحابة أيضاً! هل أنت متأكد؟")) {
+          localStorage.removeItem(this.KEY);
+          seedDemo();
+          this.save();
+        }
+      }
     };
 
     function uid() { return Math.random().toString(36).slice(2, 10) }
@@ -2501,10 +2548,11 @@
     /* ===========================================================
        23. BOOTSTRAP
     =========================================================== */
-    Store.load();
-    if (!State.data.products?.length) { seedDemo(); Store.save(); }
-    Auth.restore();
-    render();
+    // بدلاً من السطر القديم، استخدم هذا:
+    Store.load().then(() => {
+      Auth.restore();
+      render();
+    });
 
     /* PWA service worker registration (inline) */
     if ('serviceWorker' in navigator) {

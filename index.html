@@ -935,6 +935,40 @@
       font-size: 11px
     }
 
+    .category-bar {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 10px 0;
+      margin-bottom: 20px;
+      scrollbar-width: none;
+      /* لإخفاء السكرول في فيرفوكس */
+    }
+
+    .category-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* لإخفاء السكرول في كروم */
+
+    .cat-chip {
+      padding: 8px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      white-space: nowrap;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .cat-chip.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3);
+    }
+
     /* Print */
     @media print {
 
@@ -1160,8 +1194,10 @@
       },
       can(page) {
         if (!State.user) return false;
-        const r = ROLES[State.user.role];
-        return r.pages === '*' || r.pages.includes(page);
+        // المدير العام له صلاحية الوصول لكل شيء دائماً
+        if (State.user.role === 'super_admin') return true;
+        // التحقق مما إذا كانت الصفحة موجودة في قائمة الصفحات المسموحة للمستخدم
+        return State.user.allowedPages && State.user.allowedPages.includes(page);
       }
     };
     function log(user, action) {
@@ -1249,22 +1285,20 @@
     function render() {
       document.documentElement.classList.toggle('dark', State.theme === 'dark');
       document.documentElement.dir = State.lang === 'ar' ? 'rtl' : 'ltr';
-      document.documentElement.lang = State.lang;
+
       const root = document.getElementById('app-root');
-      // Public mode: no user logged in
+
+      // إذا لم يكن هناك مستخدم مسجل، اجعل الصفحة دائماً "shop" أو "cart"
       if (!State.user) {
-        if (!['shop', 'cart'].includes(State.page)) State.page = 'shop';
+        if (!['shop', 'cart'].includes(State.page)) {
+          State.page = 'shop';
+        }
         root.innerHTML = PublicShell();
         renderPage();
-        bindPublicShell();
         return;
       }
-      if (!Auth.can(State.page)) {
-        const r = ROLES[State.user.role];
-        if (r.pages === '*') State.page = 'dashboard';
-        else if (r.pages.includes('dashboard')) State.page = 'dashboard';
-        else State.page = r.pages[0];
-      }
+
+      // إذا كان هناك مستخدم، استمر في عرض الـ AppShell العادي (لوحة التحكم)
       root.innerHTML = AppShell();
       renderPage();
       bindShell();
@@ -1278,14 +1312,14 @@
     <main class="main" style="margin:0">
       <header class="topbar">
         <div class="brand" style="display:flex;align-items:center;gap:10px">
-          <div class="logo" style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--info));display:grid;place-items:center;color:#fff;font-weight:900">E</div>
+          <div class="logo">E</div>
           <h1 style="margin:0;font-size:18px">متجر سيدي</h1>
         </div>
         <div class="spacer"></div>
-        <button class="icon-btn" onclick="State.page='shop';render()" title="المتجر">🛍️</button>
-        <button class="icon-btn" onclick="State.page='cart';render()" title="السلة" style="position:relative">🛒${cartCount ? `<span class="badge">${cartCount}</span>` : ''}</button>
-        <button class="icon-btn" onclick="toggleTheme()" title="المظهر">${State.theme === 'dark' ? '☀️' : '🌙'}</button>
-        <button class="btn primary" onclick="showLoginModal()" style="margin-inline-start:8px">🔐 تسجيل الدخول</button>
+        <button class="btn ghost" onclick="State.page='shop';render()">🛍️ المتجر</button>
+        <button class="icon-btn" onclick="State.page='cart';render()">🛒${cartCount ? `<span class="badge">${cartCount}</span>` : ''}</button>
+        <!-- هذا الزر هو الذي سيطلب كلمة المرور (عبر مودال الدخول) -->
+        <button class="btn primary" onclick="showLoginModal()" style="margin-inline-start:8px">🔐 لوحة التحكم</button>
       </header>
       <div class="content" id="page"></div>
     </main>
@@ -1379,10 +1413,14 @@
     function AppShell() {
       const role = State.user.role;
       const navHTML = NAV.map(g => {
-        const items = g.items.filter(i => i.roles.includes(role));
+        // فلترة العناصر بناءً على صلاحية المستخدم الحالية
+        const items = g.items.filter(i => Auth.can(i.id));
+
         if (!items.length) return '';
         return `<div class="group">${g.group}</div>` + items.map(i =>
-          `<a href="#" data-page="${i.id}" class="${State.page === i.id ? 'active' : ''}"><span class="ico">${i.ico}</span><span>${i.label}</span></a>`
+          `<a href="#" data-page="${i.id}" class="${State.page === i.id ? 'active' : ''}">
+        <span class="ico">${i.ico}</span><span>${i.label}</span>
+      </a>`
         ).join('');
       }).join('');
       const unread = State.data.notifications.filter(n => !n.read).length;
@@ -2382,24 +2420,123 @@
        21. USERS & LOGS & SETTINGS
     =========================================================== */
     function Users() {
-      return `<div class="card"><div class="flex between mb"><h3 style="margin:0">المستخدمون والصلاحيات</h3>
-    <button class="btn primary" onclick="addUser()">+ مستخدم</button></div>
-    <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>البريد</th><th>الدور</th><th>الصلاحيات</th><th></th></tr></thead><tbody>
-    ${State.data.users.map(u => `<tr><td><b>${u.name}</b></td><td>${u.email}</td>
-    <td><span class="tag" style="background:${ROLES[u.role].color}22;color:${ROLES[u.role].color}">${ROLES[u.role].label}</span></td>
-    <td>${ROLES[u.role].pages === '*' ? 'كل الصفحات' : ROLES[u.role].pages.length + ' صفحة'}</td>
-    <td><button class="btn sm danger" onclick="if(confirm('حذف؟')){State.data.users=State.data.users.filter(x=>x.id!=='${u.id}');Store.save();render();}">×</button></td></tr>`).join('')}
-    </tbody></table></div></div>`;
+      return `
+  <div class="card">
+    <div class="flex between mb">
+      <h3 style="margin:0">🔐 إدارة المستخدمين والصلاحيات</h3>
+      <button class="btn primary" onclick="addUser()">+ إضافة مستخدم جديد</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>المستخدم</th>
+            <th>الدور الوظيفي</th>
+            <th>الصفحات المسموحة</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${State.data.users.map(u => `
+            <tr>
+              <td>
+                <div style="font-weight:700">${u.name}</div>
+                <div class="muted" style="font-size:11px">${u.email}</div>
+              </td>
+              <td><span class="tag" style="background:${ROLES[u.role].color}22;color:${ROLES[u.role].color}">${ROLES[u.role].label}</span></td>
+              <td style="max-width:300px">
+                <div style="display:flex; flex-wrap:wrap; gap:4px">
+                  ${u.role === 'super_admin' ? '<span class="pill">كل الصفحات</span>' :
+          (u.allowedPages || []).map(p => {
+            const pageInfo = NAV.flatMap(g => g.items).find(i => i.id === p);
+            return `<span class="pill" style="font-size:10px">${pageInfo ? pageInfo.label : p}</span>`;
+          }).join('')}
+                </div>
+              </td>
+              <td>
+                <button class="btn sm" onclick="addUser('${u.id}')">تعديل</button>
+                ${u.role !== 'super_admin' ? `<button class="btn sm danger" onclick="deleteUser('${u.id}')">×</button>` : ''}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
     }
-    function addUser() {
-      modal(`<h2>+ مستخدم</h2><form id="uForm">
-    <div class="row"><label>الاسم</label><input name="name" required></div>
-    <div class="row"><label>البريد</label><input name="email" type="email" required></div>
-    <div class="row"><label>كلمة المرور</label><input name="pass" required></div>
-    <div class="row"><label>الدور</label><select name="role">${Object.entries(ROLES).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('')}</select></div>
-    <div class="modal-actions"><button type="button" class="btn" onclick="closeModal()">إلغاء</button><button class="btn primary">إضافة</button></div>
-    </form>`);
-      document.getElementById('uForm').onsubmit = e => { e.preventDefault(); const fd = Object.fromEntries(new FormData(e.target)); State.data.users.push({ id: uid(), ...fd }); Store.save(); closeModal(); render(); toast('تمت الإضافة', 'success'); };
+
+    function addUser(id) {
+      const u = id ? State.data.users.find(x => x.id === id) : { allowedPages: [] };
+
+      // تجميع كل الصفحات المتاحة في النظام لعرضها
+      const allPages = NAV.flatMap(g => g.items);
+
+      modal(`
+    <h2>${id ? 'تعديل صلاحيات' : 'إضافة'} مستخدم</h2>
+    <form id="uForm">
+      <div class="grid cols-2">
+        <div class="row"><label>الاسم</label><input name="name" value="${u.name || ''}" required></div>
+        <div class="row"><label>البريد الإلكتروني</label><input name="email" type="email" value="${u.email || ''}" required></div>
+        <div class="row"><label>كلمة المرور</label><input name="pass" type="text" value="${u.pass || ''}" required></div>
+        <div class="row">
+          <label>الدور الأساسي</label>
+          <select name="role" id="userRoleSelect">
+            ${Object.entries(ROLES).map(([k, v]) => `<option value="${k}" ${u.role === k ? 'selected' : ''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:20px">
+        <label style="font-weight:bold; display:block; margin-bottom:10px">🔓 اختيار الصفحات المسموح بالدخول إليها:</label>
+        <div class="grid cols-3" style="background:var(--surface-2); padding:15px; border-radius:10px; max-height:250px; overflow-y:auto">
+          ${allPages.map(p => `
+            <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer; padding:4px">
+              <input type="checkbox" name="pages" value="${p.id}" ${(u.allowedPages || []).includes(p.id) ? 'checked' : ''}>
+              ${p.ico} ${p.label}
+            </label>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn" onclick="closeModal()">إلغاء</button>
+        <button class="btn primary">حفظ البيانات والصلاحيات</button>
+      </div>
+    </form>
+  `);
+
+      document.getElementById('uForm').onsubmit = e => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const selectedPages = Array.from(fd.getAll('pages')); // سحب كل الـ Checkboxes المختارة
+
+        const userData = {
+          name: fd.get('name'),
+          email: fd.get('email'),
+          pass: fd.get('pass'),
+          role: fd.get('role'),
+          allowedPages: selectedPages
+        };
+
+        if (id) {
+          Object.assign(u, userData);
+        } else {
+          State.data.users.push({ id: uid(), ...userData });
+        }
+
+        Store.save();
+        closeModal();
+        render();
+        toast('تم تحديث المستخدم وصلاحياته بنجاح', 'success');
+      };
+    }
+
+    function deleteUser(id) {
+      if (confirm('هل أنت متأكد من حذف هذا المستخدم؟')) {
+        State.data.users = State.data.users.filter(u => u.id !== id);
+        Store.save();
+        render();
+      }
     }
     function Logs() {
       return `<div class="card"><h3>📜 سجل النشاط والتدقيق الأمني</h3>
@@ -2425,52 +2562,89 @@
     /* ===========================================================
        22. PUBLIC SHOP / CART / MY-ORDERS (Customer view)
     =========================================================== */
+    // متغير عالمي لحفظ الفئة المختارة في المتجر
+    window.shopCategory = 'all';
+
     function Shop() {
-      return `<div class="card mb"><h3>🛍️ المتجر</h3>
-    <div class="search-box"><span class="ico">🔍</span><input id="shopS" placeholder="ابحث عن منتج..." oninput="renderShop()"></div></div>
-    <div class="grid cols-4" id="shopGrid"></div>`;
+      return `
+    <div class="card mb">
+      <div class="flex between wrap" style="gap:15px">
+        <h3 style="margin:0">🛍️ المتجر الإلكتروني</h3>
+        <div class="search-box" style="flex:1; max-width:300px">
+          <span class="ico">🔍</span>
+          <input id="shopS" placeholder="ابحث عن منتج..." oninput="renderShop()">
+        </div>
+      </div>
+    </div>
+    
+    <!-- شريط الفئات -->
+    <div class="category-bar" id="shopCats"></div>
+    
+    <div class="grid cols-4" id="shopGrid"></div>
+  `;
     }
-    Shop.after = renderShop;
+
     function renderShop() {
       const q = document.getElementById('shopS')?.value.toLowerCase() || '';
-      const list = State.data.products.filter(p => p.name.toLowerCase().includes(q));
 
-      // تحديث عداد السلة العلوي (إذا كان موجوداً) والزر العائم
+      // 1. عرض الفئات
+      const catBar = document.getElementById('shopCats');
+      if (catBar) {
+        const allCats = [{ id: 'all', name: 'الكل' }, ...State.data.categories];
+        catBar.innerHTML = allCats.map(c => `
+      <div class="cat-chip ${window.shopCategory === c.id ? 'active' : ''}" 
+           onclick="filterShopByCat('${c.id}')">
+        ${c.name}
+      </div>
+    `).join('');
+      }
+
+      // 2. فلترة المنتجات بناءً على البحث والفئة
+      const list = State.data.products.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(q);
+        const matchesCat = window.shopCategory === 'all' || p.cat === window.shopCategory;
+        return matchesSearch && matchesCat;
+      });
+
+      // 3. رسم المنتجات (مع الاحتفاظ بميزة الكمية التلقائية)
       const totalInCart = cart.reduce((s, c) => s + c.qty, 0);
       const cartTotalMoney = cart.reduce((s, c) => s + c.price * c.qty, 0);
 
-      const gridHtml = list.map(p => {
-        // البحث عن المنتج في السلة لمعرفة الكمية الحالية
+      document.getElementById('shopGrid').innerHTML = list.map(p => {
         const cartItem = cart.find(c => c.pid === p.id);
         const currentQty = cartItem ? cartItem.qty : 0;
-
         const firstImg = (p.images && p.images.length) ? p.images[0] : null;
-        const imgHtml = firstImg
-          ? `<img src="${firstImg}" style="width:100%;height:160px;object-fit:cover;border-radius:10px;cursor:pointer" onclick="showProductDetails('${p.id}')">`
-          : `<div style="font-size:60px; cursor:pointer; background:var(--surface-2); border-radius:10px; height:160px; display:grid; place-items:center" onclick="showProductDetails('${p.id}')">${p.img || '📦'}</div>`;
 
         return `
-    <div class="card" style="text-align:center; padding: 12px;">
-      ${imgHtml}
-      <div style="font-weight:800;margin-top:8px;cursor:pointer;font-size:13px;height:38px;overflow:hidden" onclick="showProductDetails('${p.id}')">${p.name}</div>
-      <div style="color:var(--primary);font-weight:900;font-size:16px;margin:5px 0">${money(p.price)}</div>
-      
-      <!-- تحكم الكمية التلقائي -->
-      <div class="qty-auto-control">
-        <div class="qty-btn-circle minus" onclick="updateAutoCart('${p.id}', -1)">−</div>
-        <div class="qty-val">${currentQty}</div>
-        <div class="qty-btn-circle" onclick="updateAutoCart('${p.id}', 1)">+</div>
-      </div>
-    </div>`;
+      <div class="card" style="text-align:center; padding: 12px;">
+        <div onclick="showProductDetails('${p.id}')" style="cursor:pointer">
+          ${firstImg ? `<img src="${firstImg}" style="width:100%;height:160px;object-fit:cover;border-radius:10px;">`
+            : `<div style="font-size:60px; background:var(--surface-2); border-radius:10px; height:160px; display:grid; place-items:center">${p.img || '📦'}</div>`}
+        </div>
+        <div style="font-weight:800;margin-top:8px;font-size:13px;height:38px;overflow:hidden">${p.name}</div>
+        <div style="color:var(--primary);font-weight:900;font-size:16px;margin:5px 0">${money(p.price)}</div>
+        <div class="qty-auto-control">
+          <div class="qty-btn-circle minus" onclick="updateAutoCart('${p.id}', -1)">−</div>
+          <div class="qty-val">${currentQty}</div>
+          <div class="qty-btn-circle" onclick="updateAutoCart('${p.id}', 1)">+</div>
+        </div>
+      </div>`;
       }).join('');
 
+      // الزر العائم
       const floatingCart = totalInCart > 0 ? `
-    <div class="floating-cart" onclick="State.page='cart';render()" style="position: fixed; bottom: 85px; inset-inline-end: 20px; background: #10b981; color: #fff; padding: 12px 25px; border-radius: 50px; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px; font-weight: bold; z-index: 1000; cursor: pointer; animation: pop 0.3s;">
+    <div class="floating-cart" onclick="State.page='cart';render()" style="position: fixed; bottom: 85px; inset-inline-end: 20px; background: #10b981; color: #fff; padding: 12px 25px; border-radius: 50px; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px; font-weight: bold; z-index: 1000; cursor: pointer;">
       🛒 عرض السلة (${totalInCart}) - ${money(cartTotalMoney)}
     </div>` : '';
 
-      document.getElementById('shopGrid').innerHTML = gridHtml + floatingCart;
+      if (totalInCart > 0) document.getElementById('shopGrid').innerHTML += floatingCart;
     }
+
+    // دالة تغيير الفئة
+    window.filterShopByCat = (catId) => {
+      window.shopCategory = catId;
+      renderShop();
+    };
 
     function addToCartQty(pid) {
       const qty = parseInt(document.getElementById('qty_' + pid)?.value || 1);

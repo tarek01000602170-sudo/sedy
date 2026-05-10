@@ -1085,8 +1085,14 @@
           db.collection('settings').doc('main_data').onSnapshot((doc) => {
             if (doc.exists) {
               State.data = doc.data();
+
+              // إذا كان المستخدم حالياً في صفحة المتجر، أعد رسمه فوراً
+              if (State.page === 'shop') {
+                renderShop();
+              } else {
+                render(); // إعادة رسم التطبيق بالكامل لباقي الصفحات
+              }
               console.log("تم تحديث البيانات من فيرباس ☁️");
-              render(); // إعادة رسم الصفحة بالبيانات الجديدة
             }
           });
         }
@@ -2574,87 +2580,122 @@
        22. PUBLIC SHOP / CART / MY-ORDERS (Customer view)
     =========================================================== */
     // متغير عالمي لحفظ الفئة المختارة في المتجر
-    window.shopCategory = 'all';
-
+    // تأكد من وجود المتغير العالمي في بداية السكريبت
     function Shop() {
+      // تعيين الفئة الافتراضية عند فتح الصفحة
+      window.shopCategory = window.shopCategory || 'all';
+
       return `
     <div class="card mb">
       <div class="flex between wrap" style="gap:15px">
         <h3 style="margin:0">🛍️ المتجر الإلكتروني</h3>
         <div class="search-box" style="flex:1; max-width:300px">
           <span class="ico">🔍</span>
-          <input id="shopS" placeholder="ابحث عن منتج..." oninput="renderShop()">
+          <input id="shopS" type="text" placeholder="ابحث عن منتج..." oninput="renderShop()">
         </div>
       </div>
     </div>
-    
-    <!-- شريط الفئات -->
-    <div class="category-bar" id="shopCats"></div>
-    
+    <div class="category-bar" id="shopCats" style="display:flex; gap:10px; overflow-x:auto; padding:10px 0; margin-bottom:15px"></div>
     <div class="grid cols-4" id="shopGrid"></div>
   `;
     }
 
     function renderShop() {
-      const q = document.getElementById('shopS')?.value.toLowerCase() || '';
+      // نضع الكود داخل setTimeout لضمان أن العناصر (shopGrid و shopS) أصبحت موجودة فعلياً في المتصفح
+      setTimeout(() => {
+        const grid = document.getElementById('shopGrid');
+        const catBar = document.getElementById('shopCats');
+        const searchInput = document.getElementById('shopS');
 
-      // 1. عرض الفئات
-      const catBar = document.getElementById('shopCats');
-      if (catBar) {
-        const allCats = [{ id: 'all', name: 'الكل' }, ...State.data.categories];
-        catBar.innerHTML = allCats.map(c => `
-      <div class="cat-chip ${window.shopCategory === c.id ? 'active' : ''}" 
-           onclick="filterShopByCat('${c.id}')">
-        ${c.name}
-      </div>
-    `).join('');
-      }
+        if (!grid) return;
 
-      // 2. فلترة المنتجات بناءً على البحث والفئة
-      const list = State.data.products.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(q);
-        const matchesCat = window.shopCategory === 'all' || p.cat === window.shopCategory;
-        return matchesSearch && matchesCat;
-      });
+        const products = State.data.products || [];
+        const categories = State.data.categories || [];
 
-      // 3. رسم المنتجات (مع الاحتفاظ بميزة الكمية التلقائية)
-      const totalInCart = cart.reduce((s, c) => s + c.qty, 0);
-      const cartTotalMoney = cart.reduce((s, c) => s + c.price * c.qty, 0);
+        // تأكد من قراءة قيمة البحث بشكل صحيح أو جعلها فارغة
+        const q = searchInput ? searchInput.value.toLowerCase() : '';
 
-      document.getElementById('shopGrid').innerHTML = list.map(p => {
-        const cartItem = cart.find(c => c.pid === p.id);
-        const currentQty = cartItem ? cartItem.qty : 0;
-        const firstImg = (p.images && p.images.length) ? p.images[0] : null;
-
-        return `
-      <div class="card" style="text-align:center; padding: 12px;">
-        <div onclick="showProductDetails('${p.id}')" style="cursor:pointer">
-          ${firstImg ? `<img src="${firstImg}" style="width:100%;height:160px;object-fit:cover;border-radius:10px;">`
-            : `<div style="font-size:60px; background:var(--surface-2); border-radius:10px; height:160px; display:grid; place-items:center">${p.img || '📦'}</div>`}
+        // 1. رسم الفئات
+        const allCats = [{ id: 'all', name: 'الكل' }, ...categories];
+        if (catBar) {
+          catBar.innerHTML = allCats.map(c => `
+        <div class="cat-chip ${window.shopCategory === c.id ? 'active' : ''}" 
+             style="padding:8px 18px; cursor:pointer; border-radius:20px; border:1px solid var(--border); white-space:nowrap; 
+             background:${window.shopCategory === c.id ? 'var(--primary)' : 'var(--surface)'}; 
+             color:${window.shopCategory === c.id ? 'white' : 'var(--text)'}"
+             onclick="filterShopByCat('${c.id}')">
+          ${c.name}
         </div>
-        <div style="font-weight:800;margin-top:8px;font-size:13px;height:38px;overflow:hidden">${p.name}</div>
-        <div style="color:var(--primary);font-weight:900;font-size:16px;margin:5px 0">${money(p.price)}</div>
-        <div class="qty-auto-control">
-          <div class="qty-btn-circle minus" onclick="updateAutoCart('${p.id}', -1)">−</div>
-          <div class="qty-val">${currentQty}</div>
-          <div class="qty-btn-circle" onclick="updateAutoCart('${p.id}', 1)">+</div>
-        </div>
-      </div>`;
-      }).join('');
+      `).join('');
+        }
 
-      // الزر العائم
-      const floatingCart = totalInCart > 0 ? `
-    <div class="floating-cart" onclick="State.page='cart';render()" style="position: fixed; bottom: 85px; inset-inline-end: 20px; background: #10b981; color: #fff; padding: 12px 25px; border-radius: 50px; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px; font-weight: bold; z-index: 1000; cursor: pointer;">
-      🛒 عرض السلة (${totalInCart}) - ${money(cartTotalMoney)}
-    </div>` : '';
+        // 2. فلترة المنتجات (تم تحسين المنطق هنا ليكون أكثر مرونة)
+        const list = products.filter(p => {
+          const name = p.name ? p.name.toLowerCase() : '';
+          const matchesSearch = name.includes(q);
+          const matchesCat = (window.shopCategory === 'all' || p.cat === window.shopCategory);
+          return matchesSearch && matchesCat;
+        });
 
-      if (totalInCart > 0) document.getElementById('shopGrid').innerHTML += floatingCart;
+        // 3. عرض النتائج
+        if (list.length === 0) {
+          grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px" class="muted">لا توجد منتجات للعرض</div>`;
+        } else {
+          grid.innerHTML = list.map(p => {
+            const cartItem = cart.find(c => c.pid === p.id);
+            const currentQty = cartItem ? cartItem.qty : 0;
+            const firstImg = (p.images && p.images.length) ? p.images[0] : null;
+
+            return `
+          <div class="card" style="text-align:center; padding:12px;">
+            <div onclick="showProductDetails('${p.id}')" style="cursor:pointer">
+              ${firstImg ? `<img src="${firstImg}" style="width:100%;height:160px;object-fit:cover;border-radius:10px;">`
+                : `<div style="font-size:60px; background:var(--surface-2); border-radius:10px; height:160px; display:grid; place-items:center">${p.img || '📦'}</div>`}
+            </div>
+            <div style="font-weight:800;margin-top:8px;font-size:13px;height:38px;overflow:hidden">${p.name}</div>
+            <div style="color:var(--primary);font-weight:900;font-size:16px;margin:5px 0">${money(p.price)}</div>
+            <div class="qty-auto-control">
+              <div class="qty-btn-circle minus" onclick="updateAutoCart('${p.id}', -1)">−</div>
+              <div class="qty-val">${currentQty}</div>
+              <div class="qty-btn-circle" onclick="updateAutoCart('${p.id}', 1)">+</div>
+            </div>
+          </div>`;
+          }).join('');
+        }
+
+        // رسم الزر العائم للسلة
+        renderFloatingCart();
+      }, 10);
     }
 
-    // دالة تغيير الفئة
+    // دالة منفصلة لرسم زر السلة العائم لضمان عدم التكرار
+    function renderFloatingCart() {
+      const totalInCart = cart.reduce((s, c) => s + c.qty, 0);
+      const existingFloatingCart = document.querySelector('.floating-cart');
+      if (existingFloatingCart) existingFloatingCart.remove();
+
+      if (totalInCart > 0) {
+        const cartTotalMoney = cart.reduce((s, c) => s + c.price * c.qty, 0);
+        const html = `
+            <div class="floating-cart" onclick="State.page='cart';render()" style="position: fixed; bottom: 85px; inset-inline-end: 20px; background: #10b981; color: #fff; padding: 12px 25px; border-radius: 50px; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px; font-weight: bold; z-index: 1000; cursor: pointer;">
+                🛒 السلة (${totalInCart}) - ${money(cartTotalMoney)}
+            </div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
+      }
+    }
+
+    // دالة الفلترة
     window.filterShopByCat = (catId) => {
       window.shopCategory = catId;
       renderShop();
+    };
+
+    // دالة إصلاح البيانات إذا كان الفيرباس فارغاً
+    window.seedAndSaveDemo = () => {
+      seedDemo(); // استدعاء الدالة التي تملأ State.data بالبيانات الافتراضية
+      Store.save(); // حفظها في فيرباس
+      render(); // إعادة التشغيل
+      toast("تم استعادة البيانات التجريبية بنجاح", "success");
     };
 
     function addToCartQty(pid) {

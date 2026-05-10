@@ -1193,10 +1193,16 @@
         } catch (e) { }
       },
       can(page) {
+        // 1. الصفحات العامة: تظهر دائماً للكل (زائر أو مستخدم)
+        if (['shop', 'cart'].includes(page)) return true;
+
+        // 2. إذا لم يكن هناك تسجيل دخول، لا تظهر باقي الصفحات
         if (!State.user) return false;
-        // المدير العام له صلاحية الوصول لكل شيء دائماً
+
+        // 3. المدير العام (super_admin) يرى كل شيء دائماً
         if (State.user.role === 'super_admin') return true;
-        // التحقق مما إذا كانت الصفحة موجودة في قائمة الصفحات المسموحة للمستخدم
+
+        // 4. باقي المستخدمين: حسب الصفحات المحددة لهم
         return State.user.allowedPages && State.user.allowedPages.includes(page);
       }
     };
@@ -1285,20 +1291,25 @@
     function render() {
       document.documentElement.classList.toggle('dark', State.theme === 'dark');
       document.documentElement.dir = State.lang === 'ar' ? 'rtl' : 'ltr';
-
       const root = document.getElementById('app-root');
 
-      // إذا لم يكن هناك مستخدم مسجل، اجعل الصفحة دائماً "shop" أو "cart"
-      if (!State.user) {
-        if (!['shop', 'cart'].includes(State.page)) {
+      // إذا كانت الصفحة "shop" أو "cart"، اعرضها دائماً كواجهة عامة
+      if (!State.user || State.page === 'shop' || State.page === 'cart') {
+        // إذا حاول زائر دخول صفحة إدارية، حوله للمتجر
+        if (!State.user && !['shop', 'cart'].includes(State.page)) {
           State.page = 'shop';
         }
-        root.innerHTML = PublicShell();
-        renderPage();
-        return;
+
+        // إذا كان مستخدماً مسجلاً ويريد المتجر، اعرضه داخل إطار المتجر العام أو لوحة التحكم حسب رغبتك
+        // هنا سنعرض المتجر بالواجهة العامة لسهولة التصفح
+        if (!State.user) {
+          root.innerHTML = PublicShell();
+          renderPage();
+          return;
+        }
       }
 
-      // إذا كان هناك مستخدم، استمر في عرض الـ AppShell العادي (لوحة التحكم)
+      // الواجهة الإدارية (لوحة التحكم)
       root.innerHTML = AppShell();
       renderPage();
       bindShell();
@@ -1413,7 +1424,7 @@
     function AppShell() {
       const role = State.user.role;
       const navHTML = NAV.map(g => {
-        // فلترة العناصر بناءً على صلاحية المستخدم الحالية
+        // الفلترة تعتمد على دالة Auth.can التي أصلحناها فوق
         const items = g.items.filter(i => Auth.can(i.id));
 
         if (!items.length) return '';

@@ -5,8 +5,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0ea5e9" />
-  <title>نظام ERP + متجر + CRM</title>
+  <title>Sedy ERP - Modern SaaS</title>
   <!-- استدعاء مكتبات Firebase -->
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Inter:wght@400;600;700&display=swap"
+    rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <link rel="manifest"
@@ -17,7 +25,25 @@
     href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Inter:wght@400;600;700&display=swap"
     rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
+  <script>
+    // إعدادات Tailwind لتناسب التصميم المطلوب
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2563eb', // Blue-600
+            surface: { light: '#f8fafc', dark: '#0f172a' },
+            card: { light: '#ffffff', dark: '#1e293b' }
+          },
+          borderRadius: {
+            '2xl': '1rem',
+            '3xl': '2rem',
+          }
+        }
+      }
+    }
+  </script>
   <!-- =========================================================
      INTERNAL CSS — Design System
 ========================================================= -->
@@ -67,8 +93,28 @@
       background: var(--bg);
       color: var(--text);
       font-family: 'Cairo', 'Inter', system-ui, sans-serif;
+      transition: all 0.3s ease;
       font-size: 14px;
       -webkit-font-smoothing: antialiased
+    }
+
+    .soft-shadow {
+      box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+    }
+
+    .glass {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+    }
+
+    /* تصميم مخصص للسكرول بار */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 10px;
     }
 
     html[dir="ltr"] body {
@@ -1178,38 +1224,51 @@
        4. AUTHENTICATION
     =========================================================== */
     const Auth = {
+      // هذا هو الجزء الذي ستقوم بتحديثه
       login(email, pass) {
         const u = State.data.users.find(x => x.email === email && x.pass === pass);
         if (!u) return null;
+
         State.user = u;
-        // Set default page based on role
-        const r = ROLES[u.role];
-        if (r.pages === '*') State.page = 'dashboard';
-        else if (r.pages.includes('dashboard')) State.page = 'dashboard';
-        else State.page = r.pages[0];
-        localStorage.setItem('session', JSON.stringify({ id: u.id, t: now() }));
-        log(u.email, 'تسجيل دخول');
+
+        // --- منطق التوجيه الجديد الذي طلبته ---
+        if (u.role === 'super_admin') {
+          State.page = 'dashboard'; // المدير يفتح على لوحة التحكم
+        } else if (u.allowedPages && u.allowedPages.length > 0) {
+          // الموظف يفتح على أول صفحة مسموحة له في قائمته
+          State.page = u.allowedPages[0];
+        } else {
+          // إذا لم يكن لديه صفحات مسموحة (حالة احتياطية)
+          State.page = 'shop';
+        }
+        // ---------------------------------------
+
+        localStorage.setItem('session', JSON.stringify({ id: u.id, t: Date.now() }));
+        // ملاحظة: لا حاجة لاستدعاء render() هنا لأن الـ onsubmit سيقوم بذلك
         return u;
       },
-      logout() { State.user = null; State.page = 'shop'; localStorage.removeItem('session'); render(); },
+
+      logout() {
+        State.user = null;
+        State.page = 'shop';
+        localStorage.removeItem('session');
+        render();
+      },
+
       restore() {
         try {
           const s = JSON.parse(localStorage.getItem('session'));
           if (s) { State.user = State.data.users.find(u => u.id === s.id); }
         } catch (e) { }
       },
+
       can(page) {
-        // 1. الصفحات العامة: تظهر دائماً للكل (زائر أو مستخدم)
         if (['shop', 'cart'].includes(page)) return true;
-
-        // 2. إذا لم يكن هناك تسجيل دخول، لا تظهر باقي الصفحات
         if (!State.user) return false;
-
-        // 3. المدير العام (super_admin) يرى كل شيء دائماً
-        if (State.user.role === 'super_admin') return true;
-
-        // 4. باقي المستخدمين: حسب الصفحات المحددة لهم
-        return State.user.allowedPages && State.user.allowedPages.includes(page);
+        const roleInfo = ROLES[State.user.role];
+        if (roleInfo.pages === '*') return true;
+        // التحقق من قائمة الصفحات المسموحة للمستخدم
+        return (State.user.allowedPages && State.user.allowedPages.includes(page));
       }
     };
     function log(user, action) {
@@ -1428,43 +1487,54 @@
        9. APP SHELL
     =========================================================== */
     function AppShell() {
-      const role = State.user.role;
-      const navHTML = NAV.map(g => {
-        // الفلترة تعتمد على دالة Auth.can التي أصلحناها فوق
-        const items = g.items.filter(i => Auth.can(i.id));
-
-        if (!items.length) return '';
-        return `<div class="group">${g.group}</div>` + items.map(i =>
-          `<a href="#" data-page="${i.id}" class="${State.page === i.id ? 'active' : ''}">
-        <span class="ico">${i.ico}</span><span>${i.label}</span>
-      </a>`
-        ).join('');
-      }).join('');
-      const unread = State.data.notifications.filter(n => !n.read).length;
       return `
-  <div class="app">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand"><div class="logo">E</div><div><div class="name">ERP System</div><div class="muted" style="font-size:11px">${ROLES[role].label}</div></div></div>
-      <nav class="nav">${navHTML}</nav>
-      <div class="user">
-        <div class="av">${State.user.name[0]}</div>
-        <div style="flex:1"><div style="font-weight:700;font-size:13px">${State.user.name}</div><div class="muted" style="font-size:11px">${State.user.email}</div></div>
-        <button class="icon-btn" onclick="if(confirm('تأكيد تسجيل الخروج؟')) Auth.logout()" title="خروج">↩</button>
+  <div class="flex h-screen bg-slate-50 overflow-hidden" dir="${State.lang === 'ar' ? 'rtl' : 'ltr'}">
+    <!-- Sidebar المطور -->
+    <aside class="w-72 bg-white border-e border-slate-200 flex flex-col hidden lg:flex">
+      <div class="p-8">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+            <i data-lucide="layers"></i>
+          </div>
+          <span class="text-xl font-black text-slate-800 tracking-tight">SEDY ERP</span>
+        </div>
+      </div>
+      
+      <nav class="flex-1 overflow-y-auto px-4 space-y-1">
+        ${renderSidebarLinks()}
+      </nav>
+
+      <div class="p-6 border-t border-slate-100">
+        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
+          <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold">${State.user.name[0]}</div>
+          <div class="flex-1 overflow-hidden">
+            <div class="text-sm font-bold text-slate-800 truncate">${State.user.name}</div>
+            <div class="text-xs text-slate-400 truncate">${ROLES[State.user.role].label}</div>
+          </div>
+          <button onclick="Auth.logout()" class="text-slate-400 hover:text-red-500"><i data-lucide="log-out" class="w-5"></i></button>
+        </div>
       </div>
     </aside>
-    <main class="main">
-      <header class="topbar">
-        <button class="icon-btn menu-toggle" id="menuToggle">☰</button>
-        <h1 id="pageTitle">${pageTitle()}</h1>
-        <div class="spacer"></div>
-        <button class="icon-btn" onclick="toggleLang()" title="اللغة">${State.lang === 'ar' ? 'EN' : 'ع'}</button>
-        <button class="icon-btn" onclick="toggleTheme()" title="المظهر">${State.theme === 'dark' ? '☀️' : '🌙'}</button>
-        <button class="icon-btn" onclick="showNotifs()" title="الإشعارات">🔔${unread ? `<span class="badge">${unread}</span>` : ''}</button>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+      <header class="h-20 bg-white/80 glass border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-30">
+        <h2 class="text-xl font-extrabold text-slate-800">${pageTitle()}</h2>
+        <div class="flex items-center gap-4">
+            <button class="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-all">
+                <i data-lucide="bell" class="w-5"></i>
+            </button>
+            <button onclick="toggleTheme()" class="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-all">
+                <i data-lucide="${State.theme === 'dark' ? 'sun' : 'moon'}" class="w-5"></i>
+            </button>
+        </div>
       </header>
-      <div class="content" id="page"></div>
+      
+      <div class="flex-1 overflow-y-auto p-8 custom-scroll" id="page">
+        <!-- المحتوى يتم حقنه هنا -->
+      </div>
     </main>
-  </div>
-  <button class="fab" onclick="quickAction()">+</button>`;
+  </div>`;
     }
     function pageTitle() {
       for (const g of NAV) for (const i of g.items) if (i.id === State.page) return i.label;
@@ -1768,14 +1838,44 @@
     function renderPosList() {
       const q = document.getElementById('posSearch')?.value.toLowerCase() || '';
       const list = State.data.products.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
-      document.getElementById('posList').innerHTML = list.map(p => `
-    <button class="card" style="padding:10px;text-align:center;cursor:pointer" onclick="addToCart('${p.id}')">
-      <div style="font-size:34px">${p.img}</div>
-      <div style="font-weight:700;font-size:12px;margin-top:4px">${p.name}</div>
-      <div style="color:var(--primary);font-weight:800;margin-top:4px">${money(p.price)}</div>
-      <div class="muted" style="font-size:10px">المتاح: ${p.stock}</div>
-    </button>`).join('');
+
+      document.getElementById('posList').innerHTML = list.map(p => {
+        return `
+    <div class="bg-white rounded-3xl p-4 soft-shadow border border-slate-100 flex flex-col items-center text-center group transition-all hover:scale-[1.02]">
+      <!-- الضغط على الصورة يزيد العدد -->
+      <div class="w-24 h-24 bg-slate-50 rounded-2xl mb-3 flex items-center justify-center cursor-pointer overflow-hidden" 
+           onclick="updatePosQty('${p.id}', 1)">
+           ${p.images && p.images[0] ? `<img src="${p.images[0]}" class="object-cover w-full h-full">` : `<span class="text-4xl">${p.img}</span>`}
+      </div>
+      
+      <!-- الضغط على الاسم ينقص العدد -->
+      <div class="cursor-pointer" onclick="updatePosQty('${p.id}', -1)">
+        <div class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">${p.name}</div>
+        <div class="text-blue-600 font-black mt-1">${money(p.price)}</div>
+      </div>
+      
+      <div class="text-[10px] text-slate-400 mt-2">المخزن: ${p.stock}</div>
+    </div>`;
+      }).join('');
     }
+
+    // دالة تحديث الكمية في الـ POS
+    window.updatePosQty = (pid, delta) => {
+      const p = State.data.products.find(x => x.id === pid);
+      let it = cart.find(c => c.pid === pid);
+
+      if (it) {
+        it.qty += delta;
+        if (it.qty <= 0) cart = cart.filter(c => c.pid !== pid);
+      } else if (delta > 0) {
+        cart.push({ pid: p.id, name: p.name, price: p.price, qty: 1 });
+      }
+
+      renderCart();
+      // إشعار بسيط للمستخدم
+      toast(delta > 0 ? `تم إضافة ${p.name}` : `تم تقليل ${p.name}`, delta > 0 ? 'success' : 'warning');
+    };
+
     function addToCart(pid) {
       const p = State.data.products.find(x => x.id === pid);
       const it = cart.find(c => c.pid === pid);

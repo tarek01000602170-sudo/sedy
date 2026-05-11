@@ -1904,59 +1904,62 @@
     =========================================================== */
     let cart = [];
     function POS() {
-      const govOpts = GOVS.map(g => `<option>${g}</option>`).join('');
+      const govOpts = GOVS.map(g => `<option value="${g}">${g}</option>`).join('');
 
       return `
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full pb-20 lg:pb-0">
-    <!-- الجانب الأيمن: المنتجات والبحث -->
+    <!-- الجانب الأيمن: المنتجات -->
     <div class="lg:col-span-8 flex flex-col gap-4">
-      <div class="bg-white rounded-3xl p-4 border border-slate-100 soft-shadow flex flex-col gap-4">
+      <div class="bg-white rounded-[2rem] p-6 border border-slate-100 soft-shadow flex flex-col gap-4">
         <div class="flex items-center justify-between wrap gap-4">
-          <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
-            <i data-lucide="zap" class="text-blue-600"></i> المنتجات السريعة
+          <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+            <i data-lucide="zap" class="text-blue-600"></i> البيع السريع
           </h3>
           <div class="relative w-full md:w-64">
              <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
-             <input id="posSearch" placeholder="بحث باسم المنتج أو SKU..." oninput="renderPosList()" 
-                    class="pl-10 pr-4 py-2 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100">
+             <input id="posSearch" placeholder="بحث..." oninput="renderPosList()" 
+                    class="pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100 w-full">
           </div>
         </div>
-
-        <!-- شريط الفئات المطور للـ POS -->
-        <div id="posCats" class="flex gap-2 overflow-x-auto pb-2 custom-scroll">
-           <!-- سيتم ملؤه بواسطة الـ JS -->
-        </div>
+        <div id="posCats" class="flex gap-2 overflow-x-auto pb-2 custom-scroll"></div>
       </div>
-
-      <!-- شبكة المنتجات -->
-      <div id="posList" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pr-2" style="max-height: calc(100vh - 280px);">
-         <!-- المنتجات هنا -->
-      </div>
+      <div id="posList" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pr-2" style="max-height: calc(100vh - 280px);"></div>
     </div>
 
-    <!-- الجانب الأيسر: الفاتورة الحالية -->
+    <!-- الجانب الأيسر: الفاتورة -->
     <div class="lg:col-span-4 bg-white rounded-[2rem] border border-slate-100 soft-shadow flex flex-col overflow-hidden">
-        <div class="p-6 border-b border-slate-50">
-            <h3 class="font-black text-slate-800 mb-4 flex items-center gap-2">
-                <i data-lucide="file-text" class="text-blue-600"></i> فاتورة البيع
+        <div class="p-6 border-b border-slate-50 space-y-4">
+            <h3 class="font-black text-slate-800 flex items-center gap-2">
+                <i data-lucide="file-text" class="text-blue-600"></i> الفاتورة الحالية
             </h3>
-            <div class="space-y-3">
-                <input id="cusPhone" placeholder="01xxxxxxxxx" oninput="autoFillCustomer()" 
-                       class="bg-slate-50 border-none rounded-2xl text-sm">
-                <input id="cusName" placeholder="اسم العميل" class="bg-slate-50 border-none rounded-2xl text-sm">
+            <!-- بيانات العميل -->
+            <div class="grid grid-cols-1 gap-3">
+                <input id="cusPhone" placeholder="رقم الهاتف" oninput="autoFillCustomer()" class="bg-slate-50 border-none rounded-2xl p-3 text-sm">
+                <input id="cusName" placeholder="اسم العميل" class="bg-slate-50 border-none rounded-2xl p-3 text-sm">
+                <select id="cusGov" class="bg-slate-50 border-none rounded-2xl p-3 text-sm font-bold text-slate-600">
+                    ${govOpts}
+                </select>
+                <textarea id="cusAddress" placeholder="العنوان التفصيلي" rows="1" class="bg-slate-50 border-none rounded-2xl p-3 text-sm"></textarea>
             </div>
         </div>
 
-        <div id="cartList" class="flex-1 overflow-y-auto p-6 space-y-4 min-h-[200px]">
-            <!-- عناصر السلة -->
-        </div>
+        <div id="cartList" class="flex-1 overflow-y-auto p-6 space-y-3 min-h-[150px]"></div>
 
         <div class="p-6 bg-slate-50 border-t border-slate-100">
+            <!-- حقل العربون -->
+            <div class="mb-4">
+                <label class="text-[10px] font-black text-slate-400 uppercase ml-2">💵 مبلغ مقدم / عربون</label>
+                <input id="posDeposit" type="number" value="0" class="w-full bg-white border-none rounded-xl p-2 text-sm font-black text-green-600">
+            </div>
             <div id="cartTotals" class="space-y-2 mb-4"></div>
-            <button class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2" 
+            <button class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2" 
                     onclick="checkout()">
                 إتمام عملية البيع 💳
             </button>
+            <div class="mt-3 text-center">
+                <span class="text-[10px] font-bold text-slate-400">الموظف الحالي: </span>
+                <span class="text-[10px] font-black text-blue-600 uppercase">${State.user?.name || 'غير معروف'}</span>
+            </div>
         </div>
     </div>
   </div>`;
@@ -2087,60 +2090,152 @@
       }
     }
     function checkout() {
-      if (!cart.length) return toast('السلة فارغة', 'warning');
-      const phone = document.getElementById('cusPhone').value;
-      const phone2 = document.getElementById('cusPhone2')?.value || '';
-      const name = document.getElementById('cusName').value || 'عميل عابر';
-      const gov = document.getElementById('cusGov').value;
+      if (!cart.length) return toast('السلة فارغة يا بطل! 🛒', 'warning');
+
+      // قراءة الحقول بأمان لتجنب الانهيار (Crash)
+      const phone = document.getElementById('cusPhone')?.value || '';
+      const name = document.getElementById('cusName')?.value || 'عميل عابر';
+      const gov = document.getElementById('cusGov')?.value || 'القاهرة';
       const address = document.getElementById('cusAddress')?.value || '';
-      const deposit = +document.getElementById('posDeposit')?.value || 0;
-      let cu = State.data.customers.find(x => x.phone === phone || (phone && x.phone2 === phone));
-      if (cu) { cu.name = name || cu.name; cu.phone2 = phone2 || cu.phone2 || ''; cu.gov = gov || cu.gov; cu.address = address || cu.address || ''; }
-      else if (phone) { cu = { id: uid(), name, phone, phone2, gov, address, points: 0, total: 0 }; State.data.customers.push(cu); }
+      const deposit = parseFloat(document.getElementById('posDeposit')?.value) || 0;
+
+      // إيجاد العميل أو إنشاء واحد جديد
+      let cu = State.data.customers.find(x => x.phone === phone && phone !== '');
+      if (!cu && phone !== '') {
+        cu = { id: uid(), name, phone, gov, address, points: 0, total: 0 };
+        State.data.customers.push(cu);
+      }
+
       const sub = cart.reduce((s, c) => s + c.price * c.qty, 0);
       const ship = 50;
-      const order = { id: uid(), code: 'ORD-' + (1000 + State.data.orders.length + 1), customerId: cu?.id, items: cart.map(c => ({ pid: c.pid, qty: c.qty, price: c.price })), total: sub + ship, status: 'pending', gov, address, shipping: ship, date: now(), salesman: State.user.id, paid: deposit, deposit };
+
+      // إنشاء الطلب مع بصمة الموظف
+      const order = {
+        id: uid(),
+        code: 'ORD-' + (1000 + State.data.orders.length + 1),
+        customerId: cu ? cu.id : null,
+        items: cart.map(c => ({ pid: c.pid, qty: c.qty, price: c.price })),
+        total: sub + ship,
+        status: 'pending',
+        gov,
+        address,
+        shipping: ship,
+        date: now(),
+        // --- هنا تخزين اسم الموظف المسجل حالياً ---
+        sellerName: State.user ? State.user.name : 'نظام آلي',
+        salesmanId: State.user ? State.user.id : 'system',
+        // ---------------------------------------
+        paid: deposit,
+        deposit: deposit
+      };
+
+      // تحديث المخزون
+      cart.forEach(item => {
+        const p = State.data.products.find(x => x.id === item.pid);
+        if (p) p.stock -= item.qty;
+      });
+
+      // حفظ البيانات
       State.data.orders.unshift(order);
-      cart.forEach(c => { const p = State.data.products.find(x => x.id === c.pid); if (p) p.stock -= c.qty; });
-      if (cu) { cu.points += Math.floor(sub / 10); cu.total = (cu.total || 0) + sub; }
-      State.data.notifications.unshift({ id: uid(), title: 'طلب جديد ' + order.code, time: now(), read: false });
-      log(State.user.email, 'إنشاء طلب ' + order.code);
-      cart = []; Store.save(); toast('تم إنشاء الطلب ' + order.code + (deposit > 0 ? ` | عربون: ${money(deposit)}` : ''), 'success'); render();
+      cart = [];
+      Store.save();
+
+      // تنظيف الواجهة ورسالة نجاح
+      toast(`تم تسجيل الطلب ${order.code} بنجاح ✅`, 'success');
+      render(); // إعادة رسم الصفحة بالكامل
     }
 
     /* ===========================================================
        14. ORDERS
     =========================================================== */
     function Orders() {
-      return `<div class="card">
-    <div class="flex between mb wrap">
-      <div class="search-box"><span class="ico">🔍</span><input placeholder="بحث..." oninput="filterOrders(this.value)"></div>
-      <div class="flex">
-        <select onchange="filterOrdersStatus(this.value)" style="width:auto">
+      return `
+  <div class="bg-white rounded-[2rem] p-6 border border-slate-100 soft-shadow">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div class="flex items-center gap-3">
+        <button class="bg-blue-600 text-white px-6 py-2.5 rounded-2xl font-black shadow-lg shadow-blue-100 flex items-center gap-2" onclick="State.page='pos';render()">
+            <i data-lucide="plus" class="w-5 h-5"></i> طلب جديد
+        </button>
+        <select onchange="filterOrdersStatus(this.value)" class="bg-slate-50 border-none rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-600 focus:ring-2 focus:ring-blue-100">
           <option value="">كل الحالات</option>
           ${['pending', 'processing', 'packed', 'shipped', 'delivered', 'returned', 'cancelled'].map(s => `<option value="${s}">${statusAr(s)}</option>`).join('')}
         </select>
-        <button class="btn primary" onclick="State.page='pos';render()">+ طلب جديد</button>
+      </div>
+      <div class="relative flex-1 max-w-md">
+         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
+         <input placeholder="بحث في الطلبات..." oninput="filterOrders(this.value)" 
+                class="w-full bg-slate-50 border-none rounded-2xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-100">
       </div>
     </div>
-    <div class="table-wrap"><table><thead><tr>
-      <th>الكود</th><th>العميل</th><th>المنتجات</th><th>المبلغ</th><th>الحالة</th><th>التاريخ</th><th>إجراءات</th>
-    </tr></thead><tbody id="ordBody">${orderRows(State.data.orders)}</tbody></table></div>
+
+    <div class="table-wrap border-none overflow-visible">
+      <table class="w-full">
+        <thead>
+          <tr class="text-slate-400 text-[11px] uppercase font-black tracking-widest border-b border-slate-100">
+            <th class="pb-4 text-start">كود الطلب</th>
+            <th class="pb-4 text-start">العميل</th>
+            <th class="pb-4 text-center">البائع</th>
+            <th class="pb-4 text-start">المبلغ</th>
+            <th class="pb-4 text-center">الحالة</th>
+            <th class="pb-4 text-start">التاريخ</th>
+            <th class="pb-4 text-end">إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="ordBody">
+          ${orderRows(State.data.orders)}
+        </tbody>
+      </table>
+    </div>
   </div>`;
     }
     function orderRows(list) {
       return list.map(o => {
         const c = State.data.customers.find(x => x.id === o.customerId);
-        return `<tr>
-      <td><b>${o.code}</b></td>
-      <td>${c?.name || 'عميل عابر'}<div class="muted" style="font-size:11px">${c?.phone || ''}</div></td>
-      <td>${o.items.length} منتج</td>
-      <td><b>${money(o.total)}</b></td>
-      <td><span class="tag ${o.status}">${statusAr(o.status)}</span></td>
-      <td>${dateStr(o.date)}</td>
-      <td><button class="btn sm" onclick="viewOrder('${o.id}')">عرض</button> <button class="btn sm" onclick="advanceStatus('${o.id}')">→ التالي</button></td>
+
+        // محاولة جلب اسم البائع من الطلب نفسه أو البحث عنه في قائمة المستخدمين
+        const seller = o.sellerName || (State.data.users.find(u => u.id === o.salesmanId || u.id === o.salesman)?.name) || 'أونلاين';
+
+        return `
+    <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors group">
+      <!-- 1. كود الطلب -->
+      <td class="py-4 px-2 font-black text-slate-800">${o.code}</td>
+      
+      <!-- 2. العميل -->
+      <td class="py-4 px-2">
+        <div class="font-bold text-slate-700">${c?.name || 'عميل عابر'}</div>
+        <div class="text-[10px] text-slate-400">${c?.phone || ''}</div>
+      </td>
+      
+      <!-- 3. البائع (هذا هو العمود الذي كان به الخطأ) -->
+      <td class="py-4 px-2 text-center">
+        <div class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl inline-flex items-center gap-2 border border-blue-100">
+            <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+            <span class="text-[11px] font-black italic">${seller}</span>
+        </div>
+      </td>
+      
+      <!-- 4. المبلغ -->
+      <td class="py-4 px-2 font-black text-primary">${money(o.total)}</td>
+      
+      <!-- 5. الحالة -->
+      <td class="py-4 px-2 text-center">
+        <span class="tag ${o.status} px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter shadow-sm">
+            ${statusAr(o.status)}
+        </span>
+      </td>
+      
+      <!-- 6. التاريخ -->
+      <td class="py-4 px-2 text-[11px] text-slate-400 font-bold">${dateStr(o.date)}</td>
+      
+      <!-- 7. إجراءات -->
+      <td class="py-4 px-2 text-end">
+        <div class="flex justify-end gap-2">
+            <button onclick="viewOrder('${o.id}')" class="px-3 py-1.5 bg-white border border-slate-100 text-slate-600 font-bold rounded-xl shadow-sm hover:bg-slate-50 transition-all text-xs">عرض</button>
+            <button onclick="advanceStatus('${o.id}')" class="px-3 py-1.5 bg-slate-800 text-white font-bold rounded-xl shadow-sm hover:bg-slate-900 transition-all text-xs">التالي ←</button>
+        </div>
+      </td>
     </tr>`;
-      }).join('') || `<tr><td colspan="7" class="muted" style="text-align:center;padding:30px">لا توجد طلبات</td></tr>`;
+      }).join('') || `<tr><td colspan="7" class="py-20 text-center text-slate-300 font-bold italic">لا توجد طلبات مسجلة</td></tr>`;
     }
     function filterOrders(q) { q = q.toLowerCase(); document.getElementById('ordBody').innerHTML = orderRows(State.data.orders.filter(o => o.code.toLowerCase().includes(q))); }
     function filterOrdersStatus(s) { document.getElementById('ordBody').innerHTML = orderRows(s ? State.data.orders.filter(o => o.status === s) : State.data.orders); }
@@ -2292,31 +2387,75 @@
        17. BARCODE
     =========================================================== */
     function Barcode() {
-      return `<div class="grid cols-2">
-    <div class="card"><h3>🏷️ ملصق المنتج (باركود)</h3>
-      <div class="row"><label>اختر منتج</label>
-        <select id="bcProd" onchange="genBC()">${State.data.products.map(p => `<option value="${p.id}">${p.name} (${p.sku})</option>`).join('')}</select>
+      // تجهيز خيارات الطلبات مع بيانات العملاء
+      const orderOptions = State.data.orders.map(o => {
+        const c = State.data.customers.find(x => x.id === o.customerId);
+        // عرض الاسم + الهاتف + رقم الطلب في خيار واحد
+        const displayText = c
+          ? `${c.name} | ${c.phone} (#${o.code})`
+          : `عميل عابر | (#${o.code})`;
+        return `<option value="${o.id}">${displayText}</option>`;
+      }).join('');
+
+      return `
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- القسم الأول: باركود المنتج -->
+    <div class="bg-white rounded-[2rem] p-8 border border-slate-100 soft-shadow">
+      <h3 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+        <i data-lucide="tag" class="text-blue-600"></i> ملصق المنتج (باركود)
+      </h3>
+      <div class="space-y-4">
+        <div class="row">
+          <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-wider">اختر المنتج</label>
+          <select id="bcProd" onchange="genBC()" class="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-100">
+            ${State.data.products.map(p => `<option value="${p.id}">${p.name} (${p.sku})</option>`).join('')}
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="row">
+            <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-wider">العرض (سم)</label>
+            <input id="bcW" type="number" value="10" oninput="genBC()" class="bg-slate-50 border-none rounded-2xl p-4 text-sm">
+          </div>
+          <div class="row">
+            <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-wider">الارتفاع (سم)</label>
+            <input id="bcH" type="number" value="6" oninput="genBC()" class="bg-slate-50 border-none rounded-2xl p-4 text-sm">
+          </div>
+        </div>
+        <button onclick="window.print()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+          <i data-lucide="printer" class="w-5 h-5"></i> طباعة الملصق
+        </button>
       </div>
-      <div class="grid cols-2" style="gap:8px;margin-bottom:12px">
-        <div class="row"><label>عرض الاستيكر (سم)</label><input id="bcW" type="number" value="10" min="3" max="30" oninput="genBC()"></div>
-        <div class="row"><label>ارتفاع الاستيكر (سم)</label><input id="bcH" type="number" value="6" min="2" max="20" oninput="genBC()"></div>
-      </div>
-      <div class="flex" style="gap:8px">
-        <button class="btn primary" onclick="window.print()">🖨️ طباعة</button>
-        <button class="btn" onclick="toast('فتح كاميرا المسح...','info')">📷 مسح</button>
-      </div>
-      <div class="card" id="bcLabel" style="text-align:center;background:#fff;color:#000;margin-top:16px;border:2px dashed var(--border)"></div>
+      <div id="bcLabel" class="mt-8 flex justify-center p-4 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 overflow-hidden"></div>
     </div>
-    <div class="card"><h3>📦 استيكر العميل</h3>
-      <div class="row"><label>اختر طلب</label>
-        <select id="csOrder" onchange="genCustomerLabel()">${State.data.orders.slice(0, 30).map(o => `<option value="${o.id}">${o.code}</option>`).join('')}</select>
+
+    <!-- القسم الثاني: ملصق شحن العميل (المطور) -->
+    <div class="bg-white rounded-[2rem] p-8 border border-slate-100 soft-shadow">
+      <h3 class="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
+        <i data-lucide="user" class="text-blue-600"></i> ملصق بيانات العميل
+      </h3>
+      <div class="space-y-4">
+        <div class="row">
+          <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-wider">بحث باسم العميل أو التليفون</label>
+          <select id="csOrder" onchange="genCustomerLabel()" class="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-100">
+            <option value="">--- اختر العميل / الطلب ---</option>
+            ${orderOptions}
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="row">
+            <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-wider">عرض الملصق</label>
+            <input id="csW" type="number" value="10" oninput="genCustomerLabel()" class="bg-slate-50 border-none rounded-2xl p-4 text-sm">
+          </div>
+          <div class="row">
+            <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-wider">ارتفاع الملصق</label>
+            <input id="csH" type="number" value="8" oninput="genCustomerLabel()" class="bg-slate-50 border-none rounded-2xl p-4 text-sm">
+          </div>
+        </div>
+        <button onclick="window.print()" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-black shadow-lg shadow-slate-200 hover:bg-slate-900 transition-all flex items-center justify-center gap-2">
+          <i data-lucide="printer" class="w-5 h-5"></i> طباعة بيانات الشحن
+        </button>
       </div>
-      <div class="grid cols-2" style="gap:8px;margin-bottom:12px">
-        <div class="row"><label>عرض الاستيكر (سم)</label><input id="csW" type="number" value="10" min="3" max="30" oninput="genCustomerLabel()"></div>
-        <div class="row"><label>ارتفاع الاستيكر (سم)</label><input id="csH" type="number" value="8" min="3" max="30" oninput="genCustomerLabel()"></div>
-      </div>
-      <button class="btn primary" onclick="window.print()">🖨️ طباعة</button>
-      <div class="card" id="csLabel" style="background:#fff;color:#000;margin-top:16px;border:2px dashed var(--border);font-family:monospace"></div>
+      <div id="csLabel" class="mt-8 flex justify-center p-4 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 overflow-hidden"></div>
     </div>
   </div>`;
     }
@@ -2336,19 +2475,33 @@
     }
     function genCustomerLabel() {
       const oid = document.getElementById('csOrder')?.value;
-      const o = State.data.orders.find(x => x.id === oid); if (!o) return;
-      const c = State.data.customers.find(x => x.id === o.customerId);
+      if (!oid) {
+        document.getElementById('csLabel').innerHTML = '<div class="text-slate-400 text-sm">يرجى اختيار عميل لعرض الملصق</div>';
+        return;
+      }
+
+      const o = State.data.orders.find(x => x.id === oid);
+      const c = State.data.customers.find(x => x.id === (o ? o.customerId : ''));
+
       const w = +document.getElementById('csW')?.value || 10;
       const h = +document.getElementById('csH')?.value || 8;
       const el = document.getElementById('csLabel');
-      el.style.width = w + 'cm'; el.style.minHeight = h + 'cm'; el.style.padding = '12px';
+
+      el.style.width = '100%';
       el.innerHTML = `
-    <div style="font-size:13px;font-weight:800;border-bottom:1px solid #000;padding-bottom:6px;margin-bottom:8px">📦 ${o.code}</div>
-    <div style="font-size:12px"><b>إلى:</b> ${c?.name || 'عميل'}</div>
-    <div style="font-size:11px;margin-top:4px">📱 ${c?.phone || ''}${c?.phone2 ? ' / ' + c.phone2 : ''}</div>
-    <div style="font-size:11px;margin-top:4px">📍 ${o.gov || ''}</div>
-    <div style="font-size:11px;margin-top:4px">${o.address || c?.address || ''}</div>
-    <div style="margin-top:8px;font-size:12px;border-top:1px solid #000;padding-top:6px"><b>الإجمالي: ${money(o.total)}</b></div>`;
+    <div style="width:${w}cm; min-height:${h}cm; background:#fff; color:#000; padding:20px; border:1px solid #000; text-align:right; font-family: sans-serif;">
+      <div style="font-size:18px; font-weight:900; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:15px; display:flex; justify-content:space-between;">
+        <span>📦 شحنة رقم: ${o.code}</span>
+        <span style="font-size:12px; font-weight:normal;">${dateStr(o.date)}</span>
+      </div>
+      <div style="font-size:16px; margin-bottom:8px;"><b>المرسل إليه:</b> ${c ? c.name : 'عميل عابر'}</div>
+      <div style="font-size:16px; margin-bottom:8px;"><b>رقم الهاتف:</b> ${c ? c.phone : o.phone || '-'}</div>
+      <div style="font-size:16px; margin-bottom:8px;"><b>المحافظة:</b> ${o.gov}</div>
+      <div style="font-size:14px; margin-bottom:15px; line-height:1.4;"><b>العنوان:</b> ${o.address || (c ? c.address : '---')}</div>
+      <div style="margin-top:20px; padding-top:10px; border-top:1px dashed #000; font-size:18px; font-weight:900;">
+        إجمالي المطلوب تحصيله: ${money(o.total)}
+      </div>
+    </div>`;
     }
 
     /* ===========================================================
@@ -2356,40 +2509,76 @@
     =========================================================== */
     function Shipments() {
       const data = State.data.orders.filter(o => ['packed', 'shipped', 'delivered'].includes(o.status));
+
       return `
-  <div class="card">
-    <div class="flex between mb wrap">
-      <h3 style="margin:0">🚚 الشحنات النشطة</h3>
-      <div class="flex wrap" style="gap:8px;align-items:center">
-        <label>📏 مقاس الاستيكر:</label>
-        <select id="stickerSize" onchange="updateStickerSize(this)" style="width:auto">
-          <option value="0">A6 (10×15 سم)</option>
-          <option value="1">A5 (15×21 سم)</option>
-          <option value="2">10×10 سم</option>
-          <option value="3">مخصص</option>
-        </select>
+  <div class="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 soft-shadow">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+      <div>
+        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+          <i data-lucide="truck" class="text-blue-600"></i> إدارة الشحنات النشطة
+        </h3>
+        <p class="text-slate-400 text-xs mt-1 font-bold">تحكم في الشحنات واطبع ملصقات التوصيل بمقاسات مخصصة</p>
+      </div>
+
+      <!-- خانات كتابة مقاس الاستيكر -->
+      <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-3xl border border-slate-100">
+        <div class="flex items-center gap-2">
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">العرض (سم)</label>
+          <input id="shipStickerW" type="number" value="10" class="w-16 bg-white border-none rounded-xl py-2 px-1 text-center font-black text-blue-600 focus:ring-2 focus:ring-blue-100">
+        </div>
+        <div class="h-8 w-[1px] bg-slate-200"></div>
+        <div class="flex items-center gap-2">
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">الارتفاع (سم)</label>
+          <input id="shipStickerH" type="number" value="15" class="w-16 bg-white border-none rounded-xl py-2 px-1 text-center font-black text-blue-600 focus:ring-2 focus:ring-blue-100">
+        </div>
+        <div class="bg-blue-100 text-blue-600 p-2 rounded-xl" title="المقاس الافتراضي 10x15">
+          <i data-lucide="maximize" class="w-4 h-4"></i>
+        </div>
       </div>
     </div>
-    <div class="table-wrap">
-      <table>
+
+    <div class="table-wrap border-none">
+      <table class="w-full">
         <thead>
-          <tr><th>الطلب</th><th>العميل</th><th>الوجهة</th><th>الحالة</th><th>إجراءات</th></tr>
+          <tr class="text-slate-400 text-[11px] uppercase font-black tracking-widest">
+            <th class="pb-4">كود الطلب</th>
+            <th class="pb-4">العميل</th>
+            <th class="pb-4">الوجهة</th>
+            <th class="pb-4 text-center">الحالة</th>
+            <th class="pb-4 text-end">إجراءات</th>
+          </tr>
         </thead>
         <tbody>
           ${data.map(o => {
         const c = State.data.customers.find(x => x.id === o.customerId);
         return `
-            <tr>
-              <td><b>${o.code}</b></td>
-              <td>${c?.name || '-'}</td>
-              <td>${o.gov || '-'}</td>
-              <td><span class="tag ${o.status}">${statusAr(o.status)}</span></td>
-              <td>
-                <button class="btn sm" onclick="advanceStatus('${o.id}')">تحديث</button>
-                <button class="btn sm" onclick="printShipmentLabel('${o.id}')">🏷️ ملصق</button>
+            <tr class="border-b border-slate-50 last:border-0 group">
+              <td class="py-5 font-black text-slate-800">${o.code}</td>
+              <td class="py-5">
+                <div class="font-bold text-slate-700">${c?.name || 'عميل'}</div>
+                <div class="text-[10px] text-slate-400">${c?.phone || '-'}</div>
+              </td>
+              <td class="py-5">
+                <div class="text-sm font-bold text-slate-600">${o.gov}</div>
+                <div class="text-[10px] text-slate-400 truncate max-w-[150px]">${o.address || '-'}</div>
+              </td>
+              <td class="py-5 text-center">
+                <span class="tag ${o.status} px-4 py-1.5 rounded-xl text-[10px] uppercase font-black tracking-wider shadow-sm italic">
+                   ${statusAr(o.status)}
+                </span>
+              </td>
+              <td class="py-5 text-end">
+                <div class="flex justify-end gap-2">
+                  <button onclick="advanceStatus('${o.id}')" class="p-2.5 bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all" title="تحديث الحالة">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                  </button>
+                  <button onclick="printShipmentLabel('${o.id}')" class="flex items-center gap-2 px-4 py-2.5 bg-slate-800 text-white rounded-xl font-bold text-xs hover:bg-slate-900 shadow-lg shadow-slate-200 transition-all">
+                    <i data-lucide="printer" class="w-4 h-4 text-slate-400"></i> طباعة الملصق
+                  </button>
+                </div>
               </td>
             </tr>`;
-      }).join('') || '<tr><td colspan="5" class="muted" style="text-align:center;padding:20px">لا توجد شحنات</td></tr>'}
+      }).join('') || '<tr><td colspan="5" class="py-20 text-center text-slate-300 font-bold">لا توجد شحنات نشطة حالياً</td></tr>'}
         </tbody>
       </table>
     </div>
@@ -2408,17 +2597,48 @@
       const o = State.data.orders.find(x => x.id === oid);
       if (!o) return;
       const c = State.data.customers.find(x => x.id === o.customerId);
-      const win = window.open('', '_blank', 'width=400,height=500');
+
+      // قراءة القيم المكتوبة في الخانات
+      const w = document.getElementById('shipStickerW')?.value || 10;
+      const h = document.getElementById('shipStickerH')?.value || 15;
+
+      const win = window.open('', '_blank', 'width=600,height=800');
       win.document.write(`
     <html dir="rtl">
-    <body onload="window.print()">
-      <div style="border:2px solid #000; padding:20px; font-family:Arial;">
-        <h2>طلب رقم: ${o.code}</h2>
-        <p>العميل: ${c?.name}</p>
-        <p>الهاتف: ${c?.phone}</p>
-        <p>المحافظة: ${o.gov}</p>
-        <hr>
-        <h3>المبلغ المطلوب: ${money(o.total)}</h3>
+    <head>
+      <title>ملصق شحن - ${o.code}</title>
+      <style>
+        @page { size: ${w}cm ${h}cm; margin: 0; }
+        body { margin: 0; padding: 0.5cm; font-family: 'Arial', sans-serif; background: #fff; }
+        .label-container { 
+          width: calc(${w}cm - 1cm); 
+          height: calc(${h}cm - 1cm); 
+          border: 2px solid #000; 
+          padding: 15px; 
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+        }
+        .header { border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .code { font-size: 24px; font-weight: 900; }
+        .info-row { margin-bottom: 12px; font-size: 16px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .info-row b { color: #555; font-size: 12px; display: block; margin-bottom: 2px; }
+        .footer { margin-top: auto; border-top: 3px solid #000; padding-top: 10px; font-size: 20px; font-weight: 900; text-align: center; }
+      </style>
+    </head>
+    <body onload="window.print(); window.close();">
+      <div class="label-container">
+        <div class="header">
+          <span class="code">📦 ${o.code}</span>
+          <span style="font-size:12px">${dateStr(o.date)}</span>
+        </div>
+        <div class="info-row"><b>المرسل إليه:</b> ${c ? c.name : 'عميل عابر'}</div>
+        <div class="info-row"><b>رقم الهاتف:</b> ${c ? c.phone : o.phone || '-'}</div>
+        <div class="info-row"><b>المحافظة:</b> ${o.gov}</div>
+        <div class="info-row"><b>العنوان التفصيلي:</b> ${o.address || (c ? c.address : '-')}</div>
+        <div class="footer">
+          المبلغ: ${money(o.total)}
+        </div>
       </div>
     </body>
     </html>`);
@@ -2543,16 +2763,118 @@
     }
 
     function ShippingCalc() {
-      const govOpts = GOVS.map(g => `<option value="50">${g}</option>`).join('');
-      return `<div class="card" style="max-width:540px;margin:auto"><h3>🧮 حاسبة الشحن الذكية</h3>
-    <div class="row"><label>المحافظة</label><select id="scGov">
-      <option value="50">القاهرة - 50 ج.م</option><option value="60">الجيزة - 60</option><option value="80">الإسكندرية - 80</option>
-      <option value="100">الصعيد - 100</option><option value="120">سيناء - 120</option></select></div>
-    <div class="row"><label>نوع التوصيل</label><select id="scType"><option value="1">عادي</option><option value="1.5">سريع (24س)</option><option value="2">Express (3س)</option></select></div>
-    <div class="row"><label>الوزن (كجم)</label><input id="scW" type="number" value="2"></div>
-    <button class="btn primary" onclick="calcShip()" style="width:100%;justify-content:center;padding:12px">احسب التكلفة</button>
-    <div id="scResult" class="mt"></div></div>`;
+      const companies = State.data.shippingCompanies || [];
+
+      return `
+  <div class="max-w-2xl mx-auto space-y-8">
+    <div class="bg-white rounded-[2rem] p-8 border border-slate-100 soft-shadow">
+      <div class="text-center mb-8">
+        <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+            <i data-lucide="calculator" class="w-8 h-8"></i>
+        </div>
+        <h3 class="text-2xl font-black text-slate-800">حاسبة الشحن الذكية</h3>
+        <p class="text-slate-400 text-sm mt-1 font-bold">احسب تكلفة التوصيل بناءً على أسعار شركاتك المتعاقد معها</p>
+      </div>
+
+      <div class="space-y-6">
+        <!-- اختيار الشركة -->
+        <div class="row">
+          <label class="text-xs font-black text-slate-400 mb-2 block uppercase tracking-widest">اختر شركة الشحن</label>
+          <select id="calcShipCo" onchange="runShippingCalc()" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold text-slate-700 focus:ring-2 focus:ring-blue-100 transition-all">
+            <option value="">--- اختر الشركة ---</option>
+            ${companies.map(sc => `<option value="${sc.id}">${sc.name}</option>`).join('')}
+          </select>
+        </div>
+
+        <!-- إدخال الوزن -->
+        <div class="row">
+          <label class="text-xs font-black text-slate-400 mb-2 block uppercase tracking-widest">وزن الشحنة (كيلو جرام)</label>
+          <div class="relative">
+            <i data-lucide="weight" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 w-5 h-5"></i>
+            <input id="calcShipWeight" type="number" value="1" min="0.5" step="0.5" oninput="runShippingCalc()" 
+                   class="w-full bg-slate-50 border-none rounded-2xl p-4 pl-12 font-black text-blue-600 focus:ring-2 focus:ring-blue-100">
+          </div>
+        </div>
+
+        <!-- نتيجة الحساب (تظهر هنا) -->
+        <div id="calcShipResult" class="pt-4">
+            <div class="bg-slate-50 rounded-3xl p-8 border border-slate-100 text-center">
+                <p class="text-slate-400 text-xs font-bold">يرجى اختيار شركة وتحديد الوزن لبدء الحساب</p>
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- قسم المقارنة السريعة -->
+    <div class="bg-blue-600 rounded-[2rem] p-8 text-white shadow-xl shadow-blue-200 relative overflow-hidden">
+        <div class="relative z-10">
+            <h4 class="font-black text-lg mb-2">مقارنة الأسعار</h4>
+            <p class="text-blue-100 text-xs mb-6">تكلفة شحن نفس الوزن لدى الشركات الأخرى</p>
+            <div id="calcComparison" class="space-y-3">
+                <!-- قائمة المقارنة -->
+            </div>
+        </div>
+        <i data-lucide="trending-up" class="absolute -bottom-4 -left-4 w-32 h-32 text-blue-500 opacity-20"></i>
+    </div>
+  </div>`;
     }
+
+    window.runShippingCalc = () => {
+      const coId = document.getElementById('calcShipCo')?.value;
+      const weight = parseFloat(document.getElementById('calcShipWeight')?.value) || 0;
+      const companies = State.data.shippingCompanies || [];
+      const resultDiv = document.getElementById('calcShipResult');
+      const compareDiv = document.getElementById('calcComparison');
+
+      if (!coId) return;
+
+      const sc = companies.find(x => x.id === coId);
+      if (!sc) return;
+
+      // منطق الحساب: (أول 2 كيلو بالسعر الأساسي + الزيادة لكل كيلو إضافي)
+      const extraKg = Math.max(0, weight - 2);
+      const extraCost = extraKg * sc.extraKgPrice;
+      const total = sc.basePrice + extraCost;
+
+      // عرض النتيجة الرئيسية
+      resultDiv.innerHTML = `
+    <div class="bg-blue-50 rounded-3xl p-6 border border-blue-100 animate-pop">
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-blue-600 font-black text-sm uppercase">التكلفة الإجمالية</span>
+            <span class="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full font-black uppercase">مؤكد</span>
+        </div>
+        <div class="text-4xl font-black text-slate-800 mb-2">${money(total)}</div>
+        <div class="flex items-center gap-2 text-slate-400 text-xs font-bold">
+            <i data-lucide="info" class="w-3 h-3"></i>
+            أساسي: ${money(sc.basePrice)} + وزن زائد: ${money(extraCost)}
+        </div>
+    </div>`;
+
+      // عرض المقارنة مع الشركات الأخرى
+      const otherCos = companies.filter(x => x.id !== coId);
+      compareDiv.innerHTML = otherCos.map(osc => {
+        const oExtraKg = Math.max(0, weight - 2);
+        const oTotal = osc.basePrice + (oExtraKg * osc.extraKgPrice);
+        const diff = oTotal - total;
+
+        return `
+    <div class="flex justify-between items-center bg-white/10 p-4 rounded-2xl backdrop-blur-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full ${diff > 0 ? 'bg-red-400' : 'bg-green-400'}"></div>
+            <span class="font-bold text-sm text-blue-50">${osc.name}</span>
+        </div>
+        <div class="text-right">
+            <div class="font-black text-sm">${money(oTotal)}</div>
+            <div class="text-[9px] ${diff > 0 ? 'text-red-200' : 'text-green-200'} font-bold">
+                ${diff > 0 ? '+' : ''}${money(diff)} فرق السعر
+            </div>
+        </div>
+    </div>`;
+      }).join('') || '<p class="text-blue-200 text-xs">لا توجد شركات أخرى للمقارنة</p>';
+
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    };
+
     function calcShip() {
       const base = +document.getElementById('scGov').value;
       const mult = +document.getElementById('scType').value;
@@ -2612,56 +2934,140 @@
     <td><button class="btn sm">سداد</button></td></tr>`).join('')}</tbody></table></div></div>`;
     }
     function Commissions() {
-      const reps = State.data.users.filter(u => u.role === 'sales');
-      const statuses = ['', 'pending', 'processing', 'packed', 'shipped', 'delivered', 'returned', 'cancelled'];
-      return `<div class="card">
-    <h3>🤝 عمولات المندوبين</h3>
-    <div class="grid cols-2 mb" style="gap:12px">
-      <div class="row"><label>اختر المندوب</label>
-        <select id="commRep" onchange="renderCommissions()">
-          <option value="">جميع المندوبين</option>
-          ${reps.map(r => `<option value="${r.id}">${r.name}</option>`).join('')}
-        </select>
+      // جلب كل المستخدمين الذين يمكنهم البيع
+      const sellers = State.data.users.filter(u => ['super_admin', 'sales', 'ops'].includes(u.role));
+      const statuses = ['pending', 'processing', 'packed', 'shipped', 'delivered', 'returned', 'cancelled'];
+
+      return `
+  <div class="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 soft-shadow">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+      <div>
+        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+          <i data-lucide="handshake" class="text-blue-600"></i> عمولات فريق المبيعات
+        </h3>
+        <p class="text-slate-400 text-xs mt-1 font-bold">تتبع أداء البائعين واحسب العمولات بناءً على الطلبات المكتملة</p>
       </div>
-      <div class="row"><label>حالة الطلبات</label>
-        <select id="commStatus" onchange="renderCommissions()">
-          <option value="">كل الحالات</option>
-          ${statuses.slice(1).map(s => `<option value="${s}">${statusAr(s)}</option>`).join('')}
-        </select>
+
+      <div class="flex flex-wrap gap-3">
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-black text-slate-400 uppercase mr-2">اختر البائع</label>
+          <select id="commRep" onchange="renderCommissions()" class="bg-slate-50 border-none rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-600 focus:ring-2 focus:ring-blue-100">
+            <option value="">جميع البائعين</option>
+            ${sellers.map(s => `<option value="${s.id}">${s.name} (${ROLES[s.role].label})</option>`).join('')}
+          </select>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-[10px] font-black text-slate-400 uppercase mr-2">حالة الطلبات</label>
+          <select id="commStatus" onchange="renderCommissions()" class="bg-slate-50 border-none rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-600 focus:ring-2 focus:ring-blue-100">
+            <option value="">كل الحالات</option>
+            <option value="delivered" selected>تم التسليم فقط</option>
+            ${statuses.filter(s => s !== 'delivered').map(s => `<option value="${s}">${statusAr(s)}</option>`).join('')}
+          </select>
+        </div>
       </div>
     </div>
-    <div id="commTable"></div>
+
+    <div id="commTable" class="overflow-x-auto">
+       <!-- الجدول سيتم رسمه هنا بواسطة renderCommissions -->
+    </div>
   </div>`;
     }
     Commissions.after = renderCommissions;
     function renderCommissions() {
       const repId = document.getElementById('commRep')?.value || '';
       const status = document.getElementById('commStatus')?.value || '';
-      const reps = State.data.users.filter(u => u.role === 'sales' && (!repId || u.id === repId));
-      const rows = reps.map(r => {
-        let ords = State.data.orders.filter(o => o.salesman === r.id);
+
+      // تصفية المستخدمين المسموح لهم بالبيع
+      const sellers = State.data.users.filter(u =>
+        ['super_admin', 'sales', 'ops'].includes(u.role) && (!repId || u.id === repId)
+      );
+
+      const rows = sellers.map(s => {
+        // جلب طلبات هذا البائع تحديداً
+        let ords = State.data.orders.filter(o => o.salesmanId === s.id || o.salesman === s.id);
+
+        // فلترة الطلبات بناءً على الحالة المختارة
         if (status) ords = ords.filter(o => o.status === status);
-        const tot = ords.reduce((s, o) => s + o.total, 0);
-        const comm = r.commission != null ? r.commission : 5;
-        return { r, ords, tot, comm };
+
+        const totalSales = ords.reduce((sum, o) => sum + o.total, 0);
+        const commPercent = s.commission || 5; // نسبة افتراضية 5% إذا لم تحدد
+        const commValue = (totalSales * commPercent) / 100;
+
+        return { s, count: ords.length, totalSales, commPercent, commValue };
       });
-      const total = rows.reduce((s, x) => s + x.tot, 0);
+
+      const grandTotalSales = rows.reduce((a, b) => a + b.totalSales, 0);
+      const grandTotalComm = rows.reduce((a, b) => a + b.commValue, 0);
+
       document.getElementById('commTable').innerHTML = `
-    <div class="table-wrap"><table><thead><tr>
-      <th>المندوب</th><th>عدد الطلبات</th><th>إجمالي المبيعات</th><th>نسبة العمولة</th><th>قيمة العمولة</th>
-    </tr></thead><tbody>
-    ${rows.map(x => `<tr>
-      <td><b>${x.r.name}</b><div class="muted" style="font-size:11px">${x.r.email}</div></td>
-      <td>${x.ords.length}</td>
-      <td>${money(x.tot)}</td>
-      <td><input type="number" value="${x.comm}" min="0" max="100" style="width:70px;text-align:center" onchange="State.data.users.find(u=>u.id==='${x.r.id}').commission=+this.value;Store.save();renderCommissions()"> %</td>
-      <td><b style="color:var(--success);font-size:16px">${money(x.tot * x.comm / 100)}</b></td>
-    </tr>`).join('')}
-    </tbody></table></div>
-    <div class="card mt" style="background:var(--primary-soft);text-align:end">
-      <span class="muted">إجمالي المبيعات المصفاة: </span><b style="font-size:18px;color:var(--primary-2)">${money(total)}</b>
+    <table class="w-full">
+      <thead>
+        <tr class="text-slate-400 text-[11px] uppercase font-black tracking-widest border-b border-slate-100">
+          <th class="pb-4 text-start text-blue-600">البائع</th>
+          <th class="pb-4 text-center">عدد الطلبات</th>
+          <th class="pb-4 text-center">إجمالي المبيعات</th>
+          <th class="pb-4 text-center">نسبة العمولة</th>
+          <th class="pb-4 text-end">قيمة العمولة</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(x => `
+          <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-all group">
+            <td class="py-5">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-blue-600 font-black text-xs group-hover:bg-blue-600 group-hover:text-white transition-all">
+                  ${x.s.name[0]}
+                </div>
+                <div>
+                  <div class="font-black text-slate-800 text-sm">${x.s.name}</div>
+                  <div class="text-[10px] text-slate-400 font-bold uppercase">${ROLES[x.s.role].label}</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-5 text-center font-bold text-slate-600">${x.count}</td>
+            <td class="py-5 text-center font-black text-slate-800">${money(x.totalSales)}</td>
+            <td class="py-5 text-center">
+              <div class="inline-flex items-center bg-slate-50 rounded-xl px-3 py-1 gap-2 border border-slate-100">
+                <input type="number" value="${x.commPercent}" 
+                       onchange="updateUserComm('${x.s.id}', this.value)"
+                       class="w-12 bg-transparent border-none text-center font-black text-blue-600 p-0 text-xs focus:ring-0">
+                <span class="text-[10px] font-black text-slate-400">%</span>
+              </div>
+            </td>
+            <td class="py-5 text-end font-black text-blue-600 text-lg">${money(x.commValue)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    
+    <!-- ملخص العمولات السفلي -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+            <div class="text-[10px] font-black text-slate-400 uppercase mb-1">إجمالي المبيعات المصفاة</div>
+            <div class="text-2xl font-black text-slate-800">${money(grandTotalSales)}</div>
+        </div>
+        <div class="bg-blue-600 rounded-3xl p-6 shadow-lg shadow-blue-100 relative overflow-hidden text-white">
+            <div class="relative z-10">
+                <div class="text-[10px] font-black text-blue-100 uppercase mb-1 text-right">إجمالي العمولات المستحقة</div>
+                <div class="text-2xl font-black text-right">${money(grandTotalComm)}</div>
+            </div>
+            <i data-lucide="badge-dollar-sign" class="absolute -bottom-2 -left-2 w-20 h-20 text-white/10"></i>
+        </div>
     </div>`;
+
+      if (typeof lucide !== 'undefined') lucide.createIcons();
     }
+
+    // دالة تحديث نسبة العمولة للمستخدم
+    window.updateUserComm = (userId, newValue) => {
+      const u = State.data.users.find(x => x.id === userId);
+      if (u) {
+        u.commission = parseFloat(newValue);
+        Store.save();
+        renderCommissions();
+        toast(`تم تحديث عمولة ${u.name} إلى ${newValue}%`, 'success');
+      }
+    };
 
     /* ===========================================================
        20. WHATSAPP & ANALYTICS

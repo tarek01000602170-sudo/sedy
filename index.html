@@ -4,37 +4,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0ea5e9" />
   <title>Sedy ERP - Modern SaaS</title>
-  <!-- استدعاء مكتبات Firebase -->
+
+  <link rel="manifest" href="manifest.json">
+
+  <link rel="manifest"
+    href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Sedy%20ERP%22%2C%22short_name%22%3A%22Sedy%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%232563eb%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F5609%2F5609352.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+
+  <!-- أضف هذا داخل الـ head -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sedy ERP">
+  <!-- تعريف الأيقونة للتثبيت -->
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5609/5609352.png">
+
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
   <!-- Fonts -->
   <link
     href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Inter:wght@400;600;700&display=swap"
     rel="stylesheet">
+
+  <!-- Firebase & Charts -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  <link rel="manifest"
-    href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22ERP%20System%22%2C%22short_name%22%3A%22ERP%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230b1220%22%2C%22theme_color%22%3A%22%230ea5e9%22%2C%22icons%22%3A%5B%5D%7D">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Inter:wght@400;600;700&display=swap"
-    rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
   <script>
-    // إعدادات Tailwind لتناسب التصميم المطلوب
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
           colors: {
-            primary: '#2563eb', // Blue-600
-            surface: { light: '#f8fafc', dark: '#0f172a' },
-            card: { light: '#ffffff', dark: '#1e293b' }
+            primary: {
+              DEFAULT: '#2563eb', // Blue-600
+              soft: '#eff6ff',
+            },
+            slate: {
+              50: '#f8fafc',
+              100: '#f1f5f9',
+              800: '#1e293b',
+              900: '#0f172a',
+            }
           },
           borderRadius: {
             '2xl': '1rem',
@@ -44,6 +59,7 @@
       }
     }
   </script>
+
   <!-- =========================================================
      INTERNAL CSS — Design System
 ========================================================= -->
@@ -66,6 +82,40 @@
       --shadow-lg: 0 10px 30px rgba(15, 23, 42, .12);
       --radius: 14px;
       --sidebar-w: 260px;
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+    }
+
+    body {
+      font-family: 'Cairo', 'Inter', sans-serif;
+      background-color: #f8fafc;
+      /* Slate-50 */
+      color: #1e293b;
+      /* Slate-800 */
+    }
+
+    .soft-ui-card {
+      background: #ffffff;
+      border: 1px solid #f1f5f9;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+      border-radius: 2rem;
+    }
+
+    .glass {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(241, 245, 249, 1);
+    }
+
+    /* تحسين شكل السكرول بار */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 10px;
     }
 
     html.dark {
@@ -93,28 +143,8 @@
       background: var(--bg);
       color: var(--text);
       font-family: 'Cairo', 'Inter', system-ui, sans-serif;
-      transition: all 0.3s ease;
       font-size: 14px;
       -webkit-font-smoothing: antialiased
-    }
-
-    .soft-shadow {
-      box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
-    }
-
-    .glass {
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(10px);
-    }
-
-    /* تصميم مخصص للسكرول بار */
-    ::-webkit-scrollbar {
-      width: 5px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: #e2e8f0;
-      border-radius: 10px;
     }
 
     html[dir="ltr"] body {
@@ -719,6 +749,27 @@
       text-align: center;
     }
 
+    .mobile-drawer {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar-closed {
+        transform: translateX(100%);
+      }
+
+      /* للغة العربية */
+      html[dir="ltr"] .sidebar-closed {
+        transform: translateX(-100%);
+      }
+    }
+
+    /* تحسين شكل الهيدر في الموبايل */
+    header {
+      padding-top: calc(0.5rem + var(--safe-top));
+    }
+
     @keyframes fade {
       from {
         opacity: 0
@@ -1096,6 +1147,8 @@
 
     const GOVS = ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'الشرقية', 'القليوبية', 'كفر الشيخ', 'الغربية', 'المنوفية', 'البحيرة', 'الإسماعيلية', 'بورسعيد', 'السويس', 'دمياط', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'الوادي الجديد', 'مطروح', 'شمال سيناء', 'جنوب سيناء'];
 
+    window.posCategory = 'all'; // الفئة الافتراضية للـ POS
+
     /* ===========================================================
        2. STORAGE LAYER (LocalStorage + Firebase fallback)
     =========================================================== */
@@ -1224,51 +1277,63 @@
        4. AUTHENTICATION
     =========================================================== */
     const Auth = {
-      // هذا هو الجزء الذي ستقوم بتحديثه
+      /* استبدل دالة login داخل كائن Auth بهذا الكود */
+
       login(email, pass) {
         const u = State.data.users.find(x => x.email === email && x.pass === pass);
         if (!u) return null;
 
         State.user = u;
 
-        // --- منطق التوجيه الجديد الذي طلبته ---
-        if (u.role === 'super_admin') {
-          State.page = 'dashboard'; // المدير يفتح على لوحة التحكم
-        } else if (u.allowedPages && u.allowedPages.length > 0) {
-          // الموظف يفتح على أول صفحة مسموحة له في قائمته
-          State.page = u.allowedPages[0];
-        } else {
-          // إذا لم يكن لديه صفحات مسموحة (حالة احتياطية)
-          State.page = 'shop';
-        }
-        // ---------------------------------------
+        // --- منطق التوجيه الذكي المطور ---
 
-        localStorage.setItem('session', JSON.stringify({ id: u.id, t: Date.now() }));
-        // ملاحظة: لا حاجة لاستدعاء render() هنا لأن الـ onsubmit سيقوم بذلك
+        if (u.role === 'super_admin') {
+          // المدير العام يفتح دائماً على لوحة التحكم
+          State.page = 'dashboard';
+        }
+        else if (u.allowedPages && u.allowedPages.length > 0) {
+          // الموظف يفتح على أول صفحة تم تحديدها له في الصلاحيات
+          // مثال: إذا كانت أول صفحة مسموحة له هي "الطلبات"، سيفتح عليها مباشرة
+          State.page = u.allowedPages[0];
+        }
+        else {
+          // إذا لم يتم تحديد صفحات مخصصة، نعود للصلاحيات الافتراضية للدور (Role)
+          const r = ROLES[u.role];
+          if (r.pages === '*') {
+            State.page = 'dashboard';
+          } else if (Array.isArray(r.pages) && r.pages.length > 0) {
+            State.page = r.pages[0];
+          } else {
+            // حالة احتياطية إذا لم يوجد أي شيء
+            State.page = 'shop';
+          }
+        }
+
+        // حفظ الجلسة وتسجيل النشاط
+        localStorage.setItem('session', JSON.stringify({ id: u.id, t: now() }));
+        log(u.email, 'تسجيل دخول وتوجيه لصفحة: ' + State.page);
+
         return u;
       },
-
-      logout() {
-        State.user = null;
-        State.page = 'shop';
-        localStorage.removeItem('session');
-        render();
-      },
-
+      logout() { State.user = null; State.page = 'shop'; localStorage.removeItem('session'); render(); },
       restore() {
         try {
           const s = JSON.parse(localStorage.getItem('session'));
           if (s) { State.user = State.data.users.find(u => u.id === s.id); }
         } catch (e) { }
       },
-
       can(page) {
+        // 1. الصفحات العامة: تظهر دائماً للكل (زائر أو مستخدم)
         if (['shop', 'cart'].includes(page)) return true;
+
+        // 2. إذا لم يكن هناك تسجيل دخول، لا تظهر باقي الصفحات
         if (!State.user) return false;
-        const roleInfo = ROLES[State.user.role];
-        if (roleInfo.pages === '*') return true;
-        // التحقق من قائمة الصفحات المسموحة للمستخدم
-        return (State.user.allowedPages && State.user.allowedPages.includes(page));
+
+        // 3. المدير العام (super_admin) يرى كل شيء دائماً
+        if (State.user.role === 'super_admin') return true;
+
+        // 4. باقي المستخدمين: حسب الصفحات المحددة لهم
+        return State.user.allowedPages && State.user.allowedPages.includes(page);
       }
     };
     function log(user, action) {
@@ -1380,6 +1445,42 @@
       bindShell();
     }
 
+    function renderSidebarLinks() {
+      const role = State.user.role;
+      return NAV.map(g => {
+        const items = g.items.filter(i => Auth.can(i.id));
+        if (!items.length) return '';
+
+        const links = items.map(i => {
+          const isActive = State.page === i.id;
+          return `
+        <a href="#" onclick="event.preventDefault(); State.page='${i.id}'; render();" 
+           class="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all group ${isActive ? 'bg-primary text-white shadow-lg shadow-blue-100' : 'text-slate-500 hover:bg-slate-50 hover:text-primary'}">
+          <i data-lucide="${getIconName(i.ico)}" class="w-5 h-5 ${isActive ? 'text-white' : 'group-hover:text-primary'}"></i>
+          <span class="font-bold text-sm">${i.label}</span>
+        </a>`;
+        }).join('');
+
+        return `
+      <div class="pt-6 pb-2 px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px]">${g.group}</div>
+      ${links}
+    `;
+      }).join('');
+    }
+
+    // دالة مساعدة لتحويل الإيموجي لاسم أيقونة
+    function getIconName(ico) {
+      const map = {
+        '📊': 'bar-chart-3', '🛍️': 'shopping-bag', '🛒': 'shopping-cart', '📦': 'package',
+        '⚡': 'zap', '📋': 'list-checks', '👥': 'users', '🎟️': 'ticket',
+        '🗂️': 'folders', '🏬': 'warehouse', '🏷️': 'tag', '🚚': 'truck',
+        '🏢': 'building', '🧮': 'calculator', '💰': 'wallet', '💸': 'banknote',
+        '🏭': 'factory', '🤝': 'handshake', '💬': 'message-circle', '📈': 'line-chart',
+        '🔐': 'shield-check', '📜': 'scroll-text', '⚙️': 'settings'
+      };
+      return map[ico] || 'circle';
+    }
+
     /* Public shell shown to non-logged-in visitors */
     function PublicShell() {
       const cartCount = cart.reduce((s, c) => s + c.qty, 0);
@@ -1487,54 +1588,43 @@
        9. APP SHELL
     =========================================================== */
     function AppShell() {
-      return `
-  <div class="flex h-screen bg-slate-50 overflow-hidden" dir="${State.lang === 'ar' ? 'rtl' : 'ltr'}">
-    <!-- Sidebar المطور -->
-    <aside class="w-72 bg-white border-e border-slate-200 flex flex-col hidden lg:flex">
-      <div class="p-8">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-            <i data-lucide="layers"></i>
-          </div>
-          <span class="text-xl font-black text-slate-800 tracking-tight">SEDY ERP</span>
-        </div>
-      </div>
-      
-      <nav class="flex-1 overflow-y-auto px-4 space-y-1">
-        ${renderSidebarLinks()}
-      </nav>
+      const role = State.user.role;
+      const navHTML = NAV.map(g => {
+        // الفلترة تعتمد على دالة Auth.can التي أصلحناها فوق
+        const items = g.items.filter(i => Auth.can(i.id));
 
-      <div class="p-6 border-t border-slate-100">
-        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
-          <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold">${State.user.name[0]}</div>
-          <div class="flex-1 overflow-hidden">
-            <div class="text-sm font-bold text-slate-800 truncate">${State.user.name}</div>
-            <div class="text-xs text-slate-400 truncate">${ROLES[State.user.role].label}</div>
-          </div>
-          <button onclick="Auth.logout()" class="text-slate-400 hover:text-red-500"><i data-lucide="log-out" class="w-5"></i></button>
-        </div>
+        if (!items.length) return '';
+        return `<div class="group">${g.group}</div>` + items.map(i =>
+          `<a href="#" data-page="${i.id}" class="${State.page === i.id ? 'active' : ''}">
+        <span class="ico">${i.ico}</span><span>${i.label}</span>
+      </a>`
+        ).join('');
+      }).join('');
+      const unread = State.data.notifications.filter(n => !n.read).length;
+      return `
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="logo">E</div><div><div class="name">ERP System</div><div class="muted" style="font-size:11px">${ROLES[role].label}</div></div></div>
+      <nav class="nav">${navHTML}</nav>
+      <div class="user">
+        <div class="av">${State.user.name[0]}</div>
+        <div style="flex:1"><div style="font-weight:700;font-size:13px">${State.user.name}</div><div class="muted" style="font-size:11px">${State.user.email}</div></div>
+        <button class="icon-btn" onclick="if(confirm('تأكيد تسجيل الخروج؟')) Auth.logout()" title="خروج">↩</button>
       </div>
     </aside>
-
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col overflow-hidden">
-      <header class="h-20 bg-white/80 glass border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-30">
-        <h2 class="text-xl font-extrabold text-slate-800">${pageTitle()}</h2>
-        <div class="flex items-center gap-4">
-            <button class="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-all">
-                <i data-lucide="bell" class="w-5"></i>
-            </button>
-            <button onclick="toggleTheme()" class="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-all">
-                <i data-lucide="${State.theme === 'dark' ? 'sun' : 'moon'}" class="w-5"></i>
-            </button>
-        </div>
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-toggle" id="menuToggle">☰</button>
+        <h1 id="pageTitle">${pageTitle()}</h1>
+        <div class="spacer"></div>
+        <button class="icon-btn" onclick="toggleLang()" title="اللغة">${State.lang === 'ar' ? 'EN' : 'ع'}</button>
+        <button class="icon-btn" onclick="toggleTheme()" title="المظهر">${State.theme === 'dark' ? '☀️' : '🌙'}</button>
+        <button class="icon-btn" onclick="showNotifs()" title="الإشعارات">🔔${unread ? `<span class="badge">${unread}</span>` : ''}</button>
       </header>
-      
-      <div class="flex-1 overflow-y-auto p-8 custom-scroll" id="page">
-        <!-- المحتوى يتم حقنه هنا -->
-      </div>
+      <div class="content" id="page"></div>
     </main>
-  </div>`;
+  </div>
+  <button class="fab" onclick="quickAction()">+</button>`;
     }
     function pageTitle() {
       for (const g of NAV) for (const i of g.items) if (i.id === State.page) return i.label;
@@ -1802,78 +1892,143 @@
     let cart = [];
     function POS() {
       const govOpts = GOVS.map(g => `<option>${g}</option>`).join('');
-      return `<div class="grid cols-2">
-    <div class="card">
-      <h3>🛍️ المنتجات</h3>
-      <div class="search-box mb"><span class="ico">🔍</span><input id="posSearch" placeholder="ابحث أو امسح باركود..." oninput="renderPosList()"></div>
-      <div id="posList" class="grid cols-3" style="gap:10px;max-height:500px;overflow:auto"></div>
+
+      return `
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full pb-20 lg:pb-0">
+    <!-- الجانب الأيمن: المنتجات والبحث -->
+    <div class="lg:col-span-8 flex flex-col gap-4">
+      <div class="bg-white rounded-3xl p-4 border border-slate-100 soft-shadow flex flex-col gap-4">
+        <div class="flex items-center justify-between wrap gap-4">
+          <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+            <i data-lucide="zap" class="text-blue-600"></i> المنتجات السريعة
+          </h3>
+          <div class="relative w-full md:w-64">
+             <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
+             <input id="posSearch" placeholder="بحث باسم المنتج أو SKU..." oninput="renderPosList()" 
+                    class="pl-10 pr-4 py-2 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100">
+          </div>
+        </div>
+
+        <!-- شريط الفئات المطور للـ POS -->
+        <div id="posCats" class="flex gap-2 overflow-x-auto pb-2 custom-scroll">
+           <!-- سيتم ملؤه بواسطة الـ JS -->
+        </div>
+      </div>
+
+      <!-- شبكة المنتجات -->
+      <div id="posList" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 overflow-y-auto pr-2" style="max-height: calc(100vh - 280px);">
+         <!-- المنتجات هنا -->
+      </div>
     </div>
-    <div class="card">
-      <h3>🧾 الفاتورة الحالية</h3>
-      <div class="row mb">
-        <label>📱 هاتف العميل (للتعرف الفوري)</label>
-        <input id="cusPhone" placeholder="01xxxxxxxxx" oninput="autoFillCustomer()">
-      </div>
-      <div class="grid cols-2" style="gap:8px">
-        <div class="row mb"><label>الاسم</label><input id="cusName" placeholder="اسم العميل"></div>
-        <div class="row mb"><label>📱 هاتف 2</label><input id="cusPhone2" placeholder="اختياري"></div>
-      </div>
-      <div class="row mb"><label>المحافظة</label>
-        <select id="cusGov">${govOpts}</select>
-      </div>
-      <div class="row mb"><label>العنوان التفصيلي</label>
-        <textarea id="cusAddress" rows="2" style="resize:vertical" placeholder="الشارع، المبنى، الشقة..."></textarea>
-      </div>
-      <div id="cartList" style="max-height:200px;overflow:auto;border-top:1px solid var(--border);padding-top:10px"></div>
-      <div id="cartTotals" class="mt"></div>
-      <div class="row mt" style="background:var(--primary-soft);border-radius:10px;padding:12px">
-        <label style="color:var(--primary-2);font-weight:800">💵 عربون / دفعة مقدمة (ج.م)</label>
-        <input id="posDeposit" type="number" min="0" value="0" placeholder="0" style="margin-top:6px">
-      </div>
-      <button class="btn primary" style="width:100%;justify-content:center;margin-top:10px;padding:12px" onclick="checkout()">إتمام البيع 💳</button>
+
+    <!-- الجانب الأيسر: الفاتورة الحالية -->
+    <div class="lg:col-span-4 bg-white rounded-[2rem] border border-slate-100 soft-shadow flex flex-col overflow-hidden">
+        <div class="p-6 border-b border-slate-50">
+            <h3 class="font-black text-slate-800 mb-4 flex items-center gap-2">
+                <i data-lucide="file-text" class="text-blue-600"></i> فاتورة البيع
+            </h3>
+            <div class="space-y-3">
+                <input id="cusPhone" placeholder="01xxxxxxxxx" oninput="autoFillCustomer()" 
+                       class="bg-slate-50 border-none rounded-2xl text-sm">
+                <input id="cusName" placeholder="اسم العميل" class="bg-slate-50 border-none rounded-2xl text-sm">
+            </div>
+        </div>
+
+        <div id="cartList" class="flex-1 overflow-y-auto p-6 space-y-4 min-h-[200px]">
+            <!-- عناصر السلة -->
+        </div>
+
+        <div class="p-6 bg-slate-50 border-t border-slate-100">
+            <div id="cartTotals" class="space-y-2 mb-4"></div>
+            <button class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2" 
+                    onclick="checkout()">
+                إتمام عملية البيع 💳
+            </button>
+        </div>
     </div>
   </div>`;
     }
     POS.after = () => { renderPosList(); renderCart(); };
     function renderPosList() {
+      const grid = document.getElementById('posList');
+      const catBar = document.getElementById('posCats');
       const q = document.getElementById('posSearch')?.value.toLowerCase() || '';
-      const list = State.data.products.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
 
-      document.getElementById('posList').innerHTML = list.map(p => {
+      if (!grid) return;
+
+      // 1. رسم شريط الفئات
+      const categories = State.data.categories || [];
+      const allCats = [{ id: 'all', name: 'الكل', ico: '📦' }, ...categories];
+      if (catBar) {
+        catBar.innerHTML = allCats.map(c => {
+          const isActive = window.posCategory === c.id;
+          return `
+        <button onclick="window.posCategory='${c.id}'; renderPosList()" 
+                class="px-4 py-2 rounded-2xl font-bold text-xs whitespace-nowrap transition-all flex items-center gap-2
+                ${isActive ? 'bg-blue-600 text-white shadow-md shadow-blue-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">
+          ${c.name}
+        </button>`;
+        }).join('');
+      }
+
+      // 2. فلترة المنتجات بناءً على البحث والفئة المختارة
+      const list = State.data.products.filter(p => {
+        const matchesSearch = (p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q));
+        const matchesCat = (window.posCategory === 'all' || p.cat === window.posCategory);
+        return matchesSearch && matchesCat;
+      });
+
+      // 3. رسم البطاقات (مع منطق الضغط: صورة تزيد، اسم ينقص)
+      grid.innerHTML = list.map(p => {
+        const cartItem = cart.find(c => c.pid === p.id);
+        const currentQty = cartItem ? cartItem.qty : 0;
+        const firstImg = (p.images && p.images.length) ? p.images[0] : null;
+
         return `
-    <div class="bg-white rounded-3xl p-4 soft-shadow border border-slate-100 flex flex-col items-center text-center group transition-all hover:scale-[1.02]">
-      <!-- الضغط على الصورة يزيد العدد -->
-      <div class="w-24 h-24 bg-slate-50 rounded-2xl mb-3 flex items-center justify-center cursor-pointer overflow-hidden" 
-           onclick="updatePosQty('${p.id}', 1)">
-           ${p.images && p.images[0] ? `<img src="${p.images[0]}" class="object-cover w-full h-full">` : `<span class="text-4xl">${p.img}</span>`}
+    <div class="group relative bg-white rounded-3xl p-3 border border-slate-50 soft-shadow transition-all hover:scale-[1.02] active:scale-95 select-none">
+      ${currentQty > 0 ? `
+        <div class="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-white z-10 shadow-lg">
+          ${currentQty}
+        </div>` : ''}
+
+      <div onclick="updatePosAction('${p.id}', 1)" class="cursor-pointer mb-2 overflow-hidden rounded-2xl bg-slate-50 aspect-square flex items-center justify-center relative">
+        ${firstImg ? `<img src="${firstImg}" class="w-full h-full object-cover">` : `<span class="text-2xl">${p.img || '📦'}</span>`}
       </div>
-      
-      <!-- الضغط على الاسم ينقص العدد -->
-      <div class="cursor-pointer" onclick="updatePosQty('${p.id}', -1)">
-        <div class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">${p.name}</div>
-        <div class="text-blue-600 font-black mt-1">${money(p.price)}</div>
+
+      <div onclick="updatePosAction('${p.id}', -1)" class="cursor-pointer text-center group/name">
+        <div class="font-bold text-slate-800 text-[11px] line-clamp-1 group-hover/name:text-red-500 transition-colors">${p.name}</div>
+        <div class="text-blue-600 font-black text-xs mt-1">${money(p.price)}</div>
       </div>
-      
-      <div class="text-[10px] text-slate-400 mt-2">المخزن: ${p.stock}</div>
     </div>`;
       }).join('');
+
+      if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
-    // دالة تحديث الكمية في الـ POS
-    window.updatePosQty = (pid, delta) => {
+    window.updatePosAction = (pid, delta) => {
       const p = State.data.products.find(x => x.id === pid);
+      if (!p) return;
+
       let it = cart.find(c => c.pid === pid);
 
       if (it) {
         it.qty += delta;
-        if (it.qty <= 0) cart = cart.filter(c => c.pid !== pid);
+        // إذا وصلت الكمية لصفر، احذف المنتج من السلة
+        if (it.qty <= 0) {
+          cart = cart.filter(c => c.pid !== pid);
+          toast(`تم حذف ${p.name} من السلة`, 'warning');
+        } else {
+          toast(delta > 0 ? `تمت إضافة ${p.name}` : `تم تقليل ${p.name}`, delta > 0 ? 'success' : 'info');
+        }
       } else if (delta > 0) {
+        // إضافة منتج جديد للسلة
         cart.push({ pid: p.id, name: p.name, price: p.price, qty: 1 });
+        toast(`أضيف ${p.name} للسلة ✅`, 'success');
       }
 
-      renderCart();
-      // إشعار بسيط للمستخدم
-      toast(delta > 0 ? `تم إضافة ${p.name}` : `تم تقليل ${p.name}`, delta > 0 ? 'success' : 'warning');
+      Store.save();
+      renderPosList(); // إعادة رسم قائمة المنتجات لتحديث العدادات
+      renderCart();    // إعادة رسم الفاتورة على اليسار
     };
 
     function addToCart(pid) {
@@ -2882,9 +3037,11 @@
 
     /* PWA service worker registration (inline) */
     if ('serviceWorker' in navigator) {
-      const swCode = `self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)))});`;
-      const blob = new Blob([swCode], { type: 'application/javascript' });
-      navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => { });
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('✅ تم تسجيل التطبيق بنجاح'))
+          .catch(err => console.log('❌ فشل تسجيل التطبيق', err));
+      });
     }
 
     /* Firebase placeholder — when you add real config:

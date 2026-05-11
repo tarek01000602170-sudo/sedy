@@ -1173,25 +1173,30 @@
 
       // تحميل البيانات
       async load() {
-        // تحميل أولي من المتصفح
+        // 1. تحميل أولي سريع من الذاكرة المحلية (عشان الموقع ميفتحش فاضي)
         try {
           const localData = JSON.parse(localStorage.getItem(this.KEY));
           if (localData) State.data = localData;
-        } catch (e) { }
+        } catch (e) { console.error("Local load error"); }
 
-        // تحميل من فيرباس إذا كان متاحاً
-        if (USE_FIREBASE) {
+        // 2. المزامنة اللحظية مع Firebase
+        if (USE_FIREBASE && typeof db !== 'undefined') {
           db.collection('settings').doc('main_data').onSnapshot((doc) => {
             if (doc.exists) {
+              console.log("🔔 تم استقبال تحديث من السحابة...");
               State.data = doc.data();
 
-              // إذا كان المستخدم حالياً في صفحة المتجر، أعد رسمه فوراً
-              if (State.page === 'shop') {
-                renderShop();
-              } else {
-                render(); // إعادة رسم التطبيق بالكامل لباقي الصفحات
-              }
-              console.log("تم تحديث البيانات من فيرباس ☁️");
+              // أهم سطر: إعادة رسم الصفحة الحالية فوراً بالبيانات الجديدة
+              // نستخدم setTimeout بسيط لضمان أن المتصفح جاهز للرسم
+              setTimeout(() => {
+                if (State.page === 'shop') {
+                  renderShop(); // تحديث المتجر فقط إذا كان المستخدم فيه
+                } else if (State.page === 'pos') {
+                  renderPosList(); // تحديث الـ POS فقط إذا كان المندوب فيه
+                } else {
+                  render(); // إعادة رسم النظام بالكامل لباقي الصفحات
+                }
+              }, 0);
             }
           });
         }
@@ -1419,30 +1424,31 @@
        7. RENDER ROOT
     =========================================================== */
     function render() {
-      document.documentElement.classList.toggle('dark', State.theme === 'dark');
-      document.documentElement.dir = State.lang === 'ar' ? 'rtl' : 'ltr';
-      const root = document.getElementById('app-root');
+      try {
+        document.documentElement.classList.toggle('dark', State.theme === 'dark');
+        document.documentElement.dir = State.lang === 'ar' ? 'rtl' : 'ltr';
+        const root = document.getElementById('app-root');
 
-      // إذا كانت الصفحة "shop" أو "cart"، اعرضها دائماً كواجهة عامة
-      if (!State.user || State.page === 'shop' || State.page === 'cart') {
-        // إذا حاول زائر دخول صفحة إدارية، حوله للمتجر
-        if (!State.user && !['shop', 'cart'].includes(State.page)) {
-          State.page = 'shop';
+        // منع مسح الهيكل بالكامل إذا كان موجوداً بالفعل (لتحسين الأداء)
+        const currentShell = State.user ? 'admin' : 'public';
+        const activeShell = root.dataset.shell;
+
+        if (activeShell !== currentShell) {
+          root.innerHTML = State.user ? AppShell() : PublicShell();
+          root.dataset.shell = currentShell;
+          if (State.user) bindShell(); // ربط أحداث القائمة الجانبية
         }
 
-        // إذا كان مستخدماً مسجلاً ويريد المتجر، اعرضه داخل إطار المتجر العام أو لوحة التحكم حسب رغبتك
-        // هنا سنعرض المتجر بالواجهة العامة لسهولة التصفح
-        if (!State.user) {
-          root.innerHTML = PublicShell();
-          renderPage();
-          return;
+        // رسم محتوى الصفحة الداخلية
+        renderPage();
+
+        // تشغيل الأيقونات
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
         }
+      } catch (error) {
+        console.error("Render Error:", error);
       }
-
-      // الواجهة الإدارية (لوحة التحكم)
-      root.innerHTML = AppShell();
-      renderPage();
-      bindShell();
     }
 
     function renderSidebarLinks() {
@@ -1659,6 +1665,8 @@
     =========================================================== */
     function renderPage() {
       const el = document.getElementById('page');
+      if (!el) return;
+
       const pages = {
         dashboard: Dashboard, pos: POS, orders: Orders, products: Products, categories: Categories,
         customers: Customers, coupons: Coupons, warehouses: Warehouses, barcode: Barcode,
@@ -1667,9 +1675,14 @@
         suppliers: Suppliers, commissions: Commissions, whatsapp: WhatsApp, analytics: Analytics,
         users: Users, logs: Logs, settings: Settings, shop: Shop, cart: Cart, 'my-orders': MyOrders
       };
+
       const fn = pages[State.page] || (() => '<div class="card">صفحة غير موجودة</div>');
       el.innerHTML = fn();
+
+      // تشغيل وظيفة ما بعد الرسم فوراً
       if (fn.after) fn.after();
+      else if (State.page === 'shop') renderShop();
+      else if (State.page === 'pos') renderPosList();
     }
 
     /* ===========================================================

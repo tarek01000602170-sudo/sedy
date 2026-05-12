@@ -8,6 +8,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Sedy ERP</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <link rel="manifest" href="manifest.json">
 
@@ -1864,33 +1866,39 @@
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
       <div>
         <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
-          <i data-lucide="package" class="text-blue-600"></i> إدارة المخزون
+          <i data-lucide="package" class="text-blue-600"></i> إدارة المخزون الشاملة
         </h3>
-        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">إضافة، تعديل، واستيراد المنتجات</p>
+        <div id="bulkActions" class="hidden mt-2 animate-pop">
+            <button onclick="deleteSelectedProducts()" class="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl font-black text-xs border border-red-100 hover:bg-red-600 hover:text-white transition-all">
+                <i data-lucide="trash-2" class="w-4 h-4"></i> حذف المحدد
+            </button>
+        </div>
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <button onclick="exportCSV('products')" class="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-100 transition-all">
-          <i data-lucide="download" class="w-4 h-4"></i> تصدير
-        </button>
-        <label class="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs hover:bg-blue-100 transition-all cursor-pointer">
-          <i data-lucide="file-up" class="w-4 h-4"></i> استيراد (إضافة) <input type="file" accept=".csv" style="display:none" onchange="importProductsCSV(this)">
+        <label class="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-bold text-xs hover:bg-emerald-100 transition-all cursor-pointer shadow-sm border border-emerald-100">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> استيراد Excel
+          <input type="file" id="excelInput" accept=".xlsx, .xls" style="display:none" onchange="importExcelProducts(this)">
         </label>
-        <button onclick="openProductForm()" class="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-xl font-black text-xs shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
+        <button onclick="openProductForm()" class="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-xl font-black text-xs shadow-lg shadow-blue-200">
           <i data-lucide="plus" class="w-4 h-4"></i> منتج جديد
         </button>
       </div>
     </div>
 
     <div class="table-wrap border-none overflow-x-auto">
-      <table class="w-full text-right">
+      <table class="w-full text-right whitespace-nowrap">
         <thead>
           <tr class="text-slate-400 text-[10px] font-black uppercase border-b border-slate-100">
+            <th class="pb-4 w-10 text-center"><input type="checkbox" onchange="toggleAllProducts(this)" class="accent-blue-600"></th>
             <th class="pb-4">المنتج</th>
             <th class="pb-4">SKU</th>
-            <th class="pb-4">الوزن</th>
-            <th class="pb-4">التوفر</th>
+            <th class="pb-4">التصنيف</th>
+            <th class="pb-4">التكلفة</th>
             <th class="pb-4">السعر</th>
+            <th class="pb-4">الربح</th>
+            <th class="pb-4">الوزن</th>
+            <th class="pb-4">متوفر</th>
             <th class="pb-4">المخزون</th>
             <th class="pb-4 text-left">إجراءات</th>
           </tr>
@@ -1903,32 +1911,116 @@
 
     // --- 2. عرض صفوف المنتجات ---
     function prodRows(list) {
-      return list.map(p => `
-    <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-all">
+      return list.map(p => {
+        const catName = State.data.categories.find(c => c.id === p.cat)?.name || 'عام';
+        const profit = p.price - p.cost;
+
+        return `
+    <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-all group">
+      <td class="py-4 text-center">
+        <input type="checkbox" name="prodCheck" value="${p.id}" onchange="updateBulkUI()" class="accent-blue-600">
+      </td>
       <td class="py-4">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-lg">${p.img || '📦'}</div>
+          <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-lg shadow-sm border border-slate-100">${p.img || '📦'}</div>
           <div>
             <div class="font-black text-slate-800 text-sm">${p.name}</div>
-            <div class="text-[10px] text-slate-400 font-bold line-clamp-1 max-w-[150px]">${p.description || 'لا يوجد وصف'}</div>
+            <div class="text-[10px] text-slate-400 font-bold max-w-[120px] truncate" title="${p.shortDesc || ''}">${p.shortDesc || 'لا يوجد وصف'}</div>
           </div>
         </div>
       </td>
-      <td class="py-4 font-mono text-[11px] text-slate-400">${p.sku}</td>
+      <td class="py-4 font-mono text-[10px] text-slate-400">${p.sku}</td>
+      <td class="py-4 text-xs font-bold text-slate-600">${catName}</td>
+      <td class="py-4 text-xs font-bold text-slate-500">${money(p.cost)}</td>
+      <td class="py-4 font-black text-blue-600 text-sm">${money(p.price)}</td>
+      <td class="py-4 font-black text-emerald-600 text-sm">${money(profit)}</td>
       <td class="py-4 text-xs font-bold text-slate-600">${p.weight || '0'} كجم</td>
       <td class="py-4">
         ${p.isAvailable !== false ?
-          '<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg text-[10px] font-black">متوفر</span>' :
-          '<span class="bg-red-50 text-red-600 px-2 py-1 rounded-lg text-[10px] font-black">غير متوفر</span>'}
+            '<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg text-[9px] font-black border border-emerald-100 shadow-sm italic">متوفر</span>' :
+            '<span class="bg-red-50 text-red-600 px-2 py-1 rounded-lg text-[9px] font-black border border-red-100 shadow-sm italic">غير متوفر</span>'}
       </td>
-      <td class="py-4 font-black text-blue-600">${money(p.price)}</td>
       <td class="py-4 font-black text-slate-800">${p.stock}</td>
       <td class="py-4 text-left">
-        <button onclick="openProductForm('${p.id}')" class="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-blue-600"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-        <button onclick="delProduct('${p.id}')" class="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        <button onclick="openProductForm('${p.id}')" class="p-2 text-slate-400 hover:text-blue-600 transition-all"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
       </td>
-    </tr>`).join('') || '<tr><td colspan="7" class="py-20 text-center text-slate-300">لا توجد منتجات</td></tr>';
+    </tr>`;
+      }).join('') || '<tr><td colspan="11" class="py-20 text-center text-slate-300">لا توجد منتجات.. استورد ملف Excel</td></tr>';
     }
+
+    // 1. تحديد الكل
+    window.toggleAllProducts = (master) => {
+      const checks = document.querySelectorAll('input[name="prodCheck"]');
+      checks.forEach(c => c.checked = master.checked);
+      updateBulkUI();
+    };
+
+    // 2. تحديث واجهة الحذف الجماعي
+    window.updateBulkUI = () => {
+      const selected = document.querySelectorAll('input[name="prodCheck"]:checked').length;
+      const bulkDiv = document.getElementById('bulkActions');
+      if (selected > 0) bulkDiv.classList.remove('hidden');
+      else bulkDiv.classList.add('hidden');
+    };
+
+    // 3. تنفيذ الحذف الجماعي
+    window.deleteSelectedProducts = () => {
+      if (!confirm('هل أنت متأكد من حذف المنتجات المختارة نهائياً؟')) return;
+      const selectedIds = Array.from(document.querySelectorAll('input[name="prodCheck"]:checked')).map(c => c.value);
+      State.data.products = State.data.products.filter(p => !selectedIds.includes(p.id));
+      Store.save();
+      render();
+      toast(`تم حذف ${selectedIds.length} منتج بنجاح`, 'warning');
+    };
+
+    // 4. استيراد ملف Excel المطور (يدعم العربي 100%)
+    window.importExcelProducts = (input) => {
+      const file = input.files[0];
+      if (!file) return;
+
+      toast('جاري قراءة البيانات العربية...', 'info');
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+          let added = 0;
+          jsonData.forEach(row => {
+            const find = (keys) => {
+              const key = Object.keys(row).find(k => keys.includes(k.trim()));
+              return key ? row[key] : null;
+            };
+
+            const name = find(['الاسم', 'المنتج', 'name']);
+            if (name) {
+              State.data.products.push({
+                id: uid(),
+                name: String(name),
+                sku: String(find(['sku', 'كود', 'code']) || uid()),
+                cat: 'c1', // تصنيف افتراضي
+                cost: parseFloat(find(['التكلفة', 'cost', 'سعر التكلفة'])) || 0,
+                price: parseFloat(find(['السعر', 'price', 'سعر البيع'])) || 0,
+                weight: parseFloat(find(['الوزن', 'weight', 'وزن القطعة'])) || 0,
+                isAvailable: find(['متوفر', 'الحالة'])?.toString().includes('نعم') || true,
+                shortDesc: find(['وصف مختصر', 'وصف', 'description']) || '',
+                stock: parseInt(find(['المخزون', 'stock', 'الكمية'])) || 0,
+                images: []
+              });
+              added++;
+            }
+          });
+
+          Store.save(); render();
+          toast(`تمت إضافة ${added} منتج للقائمة بنجاح ✅`, 'success');
+        } catch (err) { toast('فشل الاستيراد.. تأكد من تنسيق الملف', 'danger'); }
+      };
+      reader.readAsArrayBuffer(file);
+      input.value = '';
+    };
 
     // --- 3. استيراد منتجات من ملف (إضافة للموجود) ---
     window.importProductsCSV = (input) => {
@@ -1979,33 +2071,42 @@
 
     // --- 4. نموذج إضافة/تعديل منتج المطور ---
     function openProductForm(id) {
-      const p = id ? State.data.products.find(x => x.id === id) : { isAvailable: true, weight: 0, cost: 0, price: 0, stock: 0 };
+      const p = id ? State.data.products.find(x => x.id === id) : { isAvailable: true, weight: 0, cost: 0, price: 0, stock: 0, shortDesc: '' };
+      const cats = State.data.categories.map(c => `<option value="${c.id}" ${p.cat === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
 
       modal(`
-    <h2 class="text-xl font-black mb-6">${id ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h2>
+    <h2 class="text-xl font-black mb-6 text-slate-800">${id ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h2>
     <form id="prodForm" class="space-y-4 text-right">
       <div class="grid grid-cols-2 gap-4">
-        <div class="row"><label>اسم المنتج</label><input name="name" value="${p.name || ''}" required class="bg-slate-50 border-none rounded-2xl p-4"></div>
-        <div class="row"><label>SKU (كود)</label><input name="sku" value="${p.sku || ''}" class="bg-slate-50 border-none rounded-2xl p-4"></div>
+        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">اسم المنتج</label><input name="name" value="${p.name || ''}" required class="bg-slate-50 border-none rounded-2xl p-4 w-full"></div>
+        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">كود المنتج SKU</label><input name="sku" value="${p.sku || ''}" class="bg-slate-50 border-none rounded-2xl p-4 w-full"></div>
       </div>
-      <div class="row"><label>وصف مختصر</label><textarea name="description" class="bg-slate-50 border-none rounded-2xl p-4 w-full h-20">${p.description || ''}</textarea></div>
+      
+      <div class="row">
+        <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">وصف مختصر</label>
+        <textarea name="shortDesc" class="bg-slate-50 border-none rounded-2xl p-4 w-full h-20">${p.shortDesc || ''}</textarea>
+      </div>
+
       <div class="grid grid-cols-3 gap-4">
-        <div class="row"><label>الوزن (كجم)</label><input name="weight" type="number" step="0.01" value="${p.weight}" class="bg-slate-50 border-none rounded-2xl p-4"></div>
-        <div class="row"><label>التكلفة</label><input name="cost" type="number" value="${p.cost}" class="bg-slate-50 border-none rounded-2xl p-4"></div>
-        <div class="row"><label>سعر البيع</label><input name="price" type="number" value="${p.price}" class="bg-slate-50 border-none rounded-2xl p-4"></div>
+        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">وزن القطعة (كجم)</label><input name="weight" type="number" step="0.01" value="${p.weight}" class="bg-slate-50 border-none rounded-2xl p-4 w-full"></div>
+        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">سعر التكلفة</label><input name="cost" type="number" value="${p.cost}" class="bg-slate-50 border-none rounded-2xl p-4 w-full text-red-600 font-bold"></div>
+        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">سعر البيع</label><input name="price" type="number" value="${p.price}" class="bg-slate-50 border-none rounded-2xl p-4 w-full text-blue-600 font-bold"></div>
       </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div class="row"><label>المخزون</label><input name="stock" type="number" value="${p.stock}" class="bg-slate-50 border-none rounded-2xl p-4"></div>
-        <div class="row"><label>الحالة</label>
-          <select name="isAvailable" class="bg-slate-50 border-none rounded-2xl p-4 font-bold">
-            <option value="true" ${p.isAvailable !== false ? 'selected' : ''}>✅ متوفر في المخزن</option>
-            <option value="false" ${p.isAvailable === false ? 'selected' : ''}>❌ غير متوفر حالياً</option>
-          </select>
+
+      <div class="grid grid-cols-3 gap-4">
+        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">المخزون</label><input name="stock" type="number" value="${p.stock}" class="bg-slate-50 border-none rounded-2xl p-4 w-full font-black"></div>
+        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">التصنيف</label><select name="cat" class="bg-slate-50 border-none rounded-2xl p-4 w-full font-bold">${cats}</select></div>
+        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">التوفر</label>
+            <select name="isAvailable" class="bg-slate-50 border-none rounded-2xl p-4 w-full font-bold">
+                <option value="true" ${p.isAvailable !== false ? 'selected' : ''}>متوفر</option>
+                <option value="false" ${p.isAvailable === false ? 'selected' : ''}>غير متوفر</option>
+            </select>
         </div>
       </div>
+
       <div class="modal-actions mt-8">
         <button type="button" class="px-6 py-3 bg-slate-100 rounded-2xl font-bold" onclick="closeModal()">إلغاء</button>
-        <button class="px-10 py-3 bg-blue-600 text-white rounded-2xl font-black shadow-lg">حفظ المنتج</button>
+        <button class="px-12 py-3 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-100">حفظ المنتج</button>
       </div>
     </form>
   `);
@@ -2013,9 +2114,10 @@
       document.getElementById('prodForm').onsubmit = e => {
         e.preventDefault();
         const fd = Object.fromEntries(new FormData(e.target));
-        fd.isAvailable = fd.isAvailable === 'true';
-        if (id) Object.assign(p, fd); else State.data.products.push({ id: uid(), ...fd });
-        Store.save(); closeModal(); render(); toast('تم الحفظ بنجاح');
+        fd.price = Number(fd.price); fd.cost = Number(fd.cost); fd.stock = Number(fd.stock);
+        fd.weight = Number(fd.weight); fd.isAvailable = fd.isAvailable === 'true';
+        if (id) Object.assign(p, fd); else State.data.products.push({ id: uid(), images: [], ...fd });
+        Store.save(); closeModal(); render(); toast('تم التحديث بنجاح ✅');
       };
     }
 
@@ -2221,16 +2323,19 @@
       }
     }
     function checkout() {
-      if (!cart.length) return toast('السلة فارغة يا بطل! 🛒', 'warning');
+      if (!cart.length) return toast('السلة فارغة! 🛒', 'warning');
 
-      // قراءة الحقول بأمان لتجنب الانهيار (Crash)
+      // 1. قراءة البيانات من الواجهة
       const phone = document.getElementById('cusPhone')?.value || '';
       const name = document.getElementById('cusName')?.value || 'عميل عابر';
       const gov = document.getElementById('cusGov')?.value || 'القاهرة';
       const address = document.getElementById('cusAddress')?.value || '';
-      const deposit = parseFloat(document.getElementById('posDeposit')?.value) || 0;
 
-      // إيجاد العميل أو إنشاء واحد جديد
+      // التأكد من قراءة العربون كرقـم (parseFloat)
+      const depositInput = document.getElementById('posDeposit');
+      const depositValue = depositInput ? parseFloat(depositInput.value) : 0;
+
+      // 2. إيجاد أو إنشاء العميل
       let cu = State.data.customers.find(x => x.phone === phone && phone !== '');
       if (!cu && phone !== '') {
         cu = { id: uid(), name, phone, gov, address, points: 0, total: 0 };
@@ -2239,41 +2344,40 @@
 
       const sub = cart.reduce((s, c) => s + c.price * c.qty, 0);
       const ship = 50;
+      const grandTotal = sub + ship;
 
-      // إنشاء الطلب مع بصمة الموظف
+      // 3. إنشاء كائن الطلب مع المبالغ الصحيحة
       const order = {
         id: uid(),
         code: 'ORD-' + (1000 + State.data.orders.length + 1),
         customerId: cu ? cu.id : null,
         items: cart.map(c => ({ pid: c.pid, qty: c.qty, price: c.price })),
-        total: sub + ship,
+        total: grandTotal,
         status: 'pending',
         gov,
         address,
         shipping: ship,
         date: now(),
-        // --- هنا تخزين اسم الموظف المسجل حالياً ---
-        sellerName: State.user ? State.user.name : 'نظام آلي',
+        sellerName: State.user ? State.user.name : 'متجر أونلاين',
         salesmanId: State.user ? State.user.id : 'system',
-        // ---------------------------------------
-        paid: deposit,
-        deposit: deposit
+        // حفظ المبلغ المدفوع (عربون) والمتبقي
+        paid: depositValue,
+        remaining: grandTotal - depositValue
       };
 
-      // تحديث المخزون
+      // 4. تحديث المخزون
       cart.forEach(item => {
         const p = State.data.products.find(x => x.id === item.pid);
         if (p) p.stock -= item.qty;
       });
 
-      // حفظ البيانات
+      // 5. حفظ وتصفير السلة
       State.data.orders.unshift(order);
       cart = [];
       Store.save();
 
-      // تنظيف الواجهة ورسالة نجاح
-      toast(`تم تسجيل الطلب ${order.code} بنجاح ✅`, 'success');
-      render(); // إعادة رسم الصفحة بالكامل
+      toast(`تم حفظ الطلب بنجاح.. المدفوع: ${money(depositValue)}`, 'success');
+      render();
     }
 
     /* ===========================================================
@@ -2378,22 +2482,84 @@
     }
     function viewOrder(id) {
       const o = State.data.orders.find(x => x.id === id);
+      if (!o) return;
       const c = State.data.customers.find(x => x.id === o.customerId);
-      const items = o.items.map(it => {
+
+      const itemsHtml = o.items.map(it => {
         const p = State.data.products.find(x => x.id === it.pid);
-        return `<tr><td>${p?.name || '-'}</td><td>${it.qty}</td><td>${money(it.price)}</td><td>${money(it.qty * it.price)}</td></tr>`;
+        return `
+      <tr class="border-b border-slate-50">
+        <td class="py-3 text-sm font-bold text-slate-700">${p?.name || 'منتج محذوف'}</td>
+        <td class="py-3 text-center text-xs">${it.qty}</td>
+        <td class="py-3 text-center text-xs">${money(it.price)}</td>
+        <td class="py-3 text-end text-sm font-black">${money(it.qty * it.price)}</td>
+      </tr>`;
       }).join('');
-      modal(`<h2>${o.code}</h2>
-    <p><b>العميل:</b> ${c?.name || '-'} | ${c?.phone || ''}<br><b>المحافظة:</b> ${o.gov} | <b>التاريخ:</b> ${dateStr(o.date)}</p>
-    <table style="width:100%"><thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead><tbody>${items}</tbody></table>
-    <div style="text-align:end;margin-top:14px;font-size:18px"><b>الإجمالي: ${money(o.total)}</b></div>
-    <div style="margin-top:14px"><b>الحالة:</b> <span class="tag ${o.status}">${statusAr(o.status)}</span></div>
-    <div class="modal-actions">
-      <button class="btn" onclick="window.print()">🖨️ طباعة</button>
-      <button class="btn" onclick="returnOrder('${o.id}')">↩ مرتجع</button>
-      <button class="btn primary" onclick="closeModal()">إغلاق</button>
-    </div>`);
+
+      // حساب المبالغ
+      const paidAmount = o.paid || 0;
+      const remainingAmount = o.total - paidAmount;
+
+      modal(`
+    <div class="space-y-6 text-right" dir="rtl">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+        <h2 class="text-2xl font-black text-slate-800">${o.code}</h2>
+        <span class="tag ${o.status} px-4 py-1 rounded-full text-[10px] font-black uppercase shadow-sm">${statusAr(o.status)}</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+        <div>
+            <label class="text-[10px] font-black text-slate-400 uppercase block mb-1">العميل</label>
+            <div class="font-bold text-slate-700 text-sm">${c?.name || 'عميل عابر'}</div>
+            <div class="text-[10px] text-slate-400">${o.gov} - ${o.address || ''}</div>
+        </div>
+        <div class="text-left">
+            <label class="text-[10px] font-black text-slate-400 uppercase block mb-1">البائع</label>
+            <div class="font-black text-blue-600 text-sm italic">${o.sellerName || '---'}</div>
+            <div class="text-[10px] text-slate-400">${dateStr(o.date)}</div>
+        </div>
+      </div>
+
+      <table class="w-full">
+        <thead>
+          <tr class="text-slate-400 text-[10px] font-black uppercase border-b border-slate-100">
+            <th class="pb-2 text-right">الصنف</th>
+            <th class="pb-2 text-center">الكمية</th>
+            <th class="pb-2 text-center">السعر</th>
+            <th class="pb-2 text-end">الإجمالي</th>
+          </tr>
+        </thead>
+        <tbody>${itemsHtml}</tbody>
+      </table>
+
+      <!-- ملخص الحساب (هنا تم حل مشكلتك) -->
+      <div class="space-y-2 pt-4 border-t-2 border-dashed border-slate-100">
+        <div class="flex justify-between items-center text-sm font-bold text-slate-500">
+            <span>إجمالي الفاتورة:</span>
+            <span>${money(o.total)}</span>
+        </div>
+        <div class="flex justify-between items-center text-sm font-black text-emerald-600 bg-emerald-50 p-2 rounded-xl">
+            <span>المبلغ المحصل (المدفوع):</span>
+            <span>${money(paidAmount)}</span>
+        </div>
+        <div class="flex justify-between items-center text-lg font-black ${remainingAmount > 0 ? 'text-red-600 bg-red-50' : 'text-slate-400 bg-slate-50'} p-3 rounded-xl border border-white shadow-sm">
+            <span>المبلغ المتبقي للتحصيل:</span>
+            <span>${money(remainingAmount)}</span>
+        </div>
+      </div>
+
+      <div class="modal-actions !justify-between">
+        <button onclick="window.print()" class="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-2xl font-bold text-xs hover:bg-black transition-all">
+            <i data-lucide="printer" class="w-4 h-4 text-slate-400"></i> طباعة الفاتورة
+        </button>
+        <button onclick="closeModal()" class="px-8 py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold text-xs">إغلاق</button>
+      </div>
+    </div>
+  `);
+
+      if (typeof lucide !== 'undefined') lucide.createIcons();
     }
+
     function returnOrder(id) { const o = State.data.orders.find(x => x.id === id); o.status = 'returned'; Store.save(); closeModal(); render(); toast('تم تسجيل المرتجع', 'warning'); }
 
     /* ===========================================================
@@ -3822,43 +3988,81 @@ ${State.data.users.map(u => {
        ... wire onSnapshot to State.data and call render()
     */
     function showProductDetails(pid) {
+      // البحث عن المنتج
       const p = State.data.products.find(x => x.id === pid);
-      if (!p) return;
 
-      const images = p.images && p.images.length ? p.images : [];
-      const mainImgSrc = images.length ? images[0] : '';
+      // إذا لم يجد المنتج، يظهر تنبيه ويغلق
+      if (!p) {
+        console.error("Product not found ID:", pid);
+        toast("عذراً، تعذر تحميل بيانات المنتج", "danger");
+        return;
+      }
 
+      // التأكد من وجود مصفوفة الصور
+      const images = Array.isArray(p.images) ? p.images : [];
+      const mainImgSrc = images.length > 0 ? images[0] : '';
+
+      // إنشاء الصور المصغرة
       const thumbnailsHtml = images.map((img, i) => `
-    <img src="${img}" class="thumb-item ${i === 0 ? 'active' : ''}" 
-         style="width:60px; height:60px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid ${i === 0 ? 'var(--primary)' : 'transparent'}" 
+    <img src="${img}" class="thumb-item ${i === 0 ? 'active border-primary' : 'border-transparent'}" 
+         style="width:60px; height:60px; object-fit:cover; border-radius:12px; cursor:pointer; border:2px solid;" 
          onclick="changeMainImg(this, '${img}')">
   `).join('');
 
+      // جلب اسم التصنيف
+      const catName = State.data.categories.find(c => c.id === p.cat)?.name || 'عام';
+
+      // رسم المودال بتصميم SaaS
       modal(`
-    <div class="grid cols-2" style="gap:20px; align-items: start;">
-      <div class="product-gallery" style="display:flex; flex-direction:column; gap:10px">
-        <div class="main-img-container" id="mainImgFrame" 
-             style="width: 100%; height: 300px; overflow: hidden; border-radius: 14px; border: 1px solid var(--border); position: relative; cursor: zoom-in;"
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-right" dir="rtl">
+      <!-- معرض الصور -->
+      <div class="space-y-4">
+        <div class="main-img-container bg-slate-50 rounded-[2rem] overflow-hidden border border-slate-100 soft-shadow aspect-square flex items-center justify-center relative group" 
              onmousemove="zoomImg(event)" onmouseleave="resetZoom()">
-          ${mainImgSrc ? `<img src="${mainImgSrc}" id="productMainImg" style="width:100%; height:100%; object-fit:contain; transition: transform 0.3s ease;">` : `<div style="font-size:120px;text-align:center;padding:40px">${p.img}</div>`}
+          ${mainImgSrc ?
+          `<img src="${mainImgSrc}" id="productMainImg" class="w-full h-full object-contain transition-transform duration-500">` :
+          `<div class="text-8xl opacity-10">${p.img || '📦'}</div>`
+        }
         </div>
-        <div class="thumb-list" style="display:flex; gap:8px; overflow-x:auto; padding:5px 0;">${thumbnailsHtml}</div>
+        <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">${thumbnailsHtml}</div>
       </div>
-      <div>
-        <h2 style="margin:0 0 10px 0">${p.name}</h2>
-        <span class="pill">${State.data.categories.find(c => c.id === p.cat)?.name || 'عام'}</span>
-        <div style="font-size:28px; font-weight:900; color:var(--primary); margin:20px 0">
-          ${money(p.price)}
+
+      <!-- بيانات المنتج -->
+      <div class="flex flex-col h-full">
+        <div class="mb-2">
+            <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest italic border border-blue-100">${catName}</span>
         </div>
-        <div style="margin-bottom:20px">
-          <label style="display:block; font-weight:bold; margin-bottom:5px">الكمية المطلوبة:</label>
-          <input type="number" id="detailQty" value="1" min="1" style="width:100px">
+        <h2 class="text-3xl font-black text-slate-800 mb-4">${p.name || 'منتج بدون اسم'}</h2>
+        
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6">
+            <p class="text-slate-500 text-sm leading-relaxed font-bold">${p.shortDesc || 'لا يوجد وصف متاح لهذا المنتج حالياً.'}</p>
         </div>
-        <button class="btn primary" style="width:100%; justify-content:center; padding:15px; font-size:16px" 
-                onclick="addToCartFromDetail('${p.id}')">🛒 إضافة إلى السلة</button>
+
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="bg-white border border-slate-100 p-4 rounded-2xl soft-shadow text-center">
+                <span class="text-[10px] text-slate-400 font-black block uppercase mb-1">الوزن</span>
+                <span class="font-black text-slate-700">${p.weight || '0'} كجم</span>
+            </div>
+            <div class="bg-white border border-slate-100 p-4 rounded-2xl soft-shadow text-center">
+                <span class="text-[10px] text-slate-400 font-black block uppercase mb-1">التوفر</span>
+                <span class="font-black ${p.stock > 0 ? 'text-emerald-500' : 'text-red-500'}">${p.stock > 0 ? 'في المخزن' : 'نفد'}</span>
+            </div>
+        </div>
+
+        <div class="mt-auto pt-6 border-t border-slate-100 flex items-center justify-between">
+            <div>
+                <span class="text-[10px] text-slate-400 font-black block uppercase">السعر النهائي</span>
+                <span class="text-3xl font-black text-blue-600">${money(p.price)}</span>
+            </div>
+            <button onclick="addToCartFromDetail('${p.id}')" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all flex items-center gap-2">
+                <i data-lucide="shopping-cart" class="w-5 h-5"></i> إضافة للسلة
+            </button>
+        </div>
       </div>
     </div>
   `);
+
+      if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
     // وظيفة تبديل الصورة الرئيسية

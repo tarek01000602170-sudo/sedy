@@ -1797,54 +1797,161 @@
   </div>`;
     }
     Dashboard.after = () => {
-      const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(now() - 86400000 * (6 - i)); return d.toLocaleDateString('ar-EG', { weekday: 'short' }) });
-      const sales = days.map(() => Math.round(1000 + Math.random() * 4000));
-      new Chart(document.getElementById('ch1'), { type: 'line', data: { labels: days, datasets: [{ label: 'المبيعات', data: sales, borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,.15)', tension: .4, fill: true }] }, options: { plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false } });
-      const counts = {};
-      State.data.orders.forEach(o => counts[o.status] = (counts[o.status] || 0) + 1);
-      new Chart(document.getElementById('ch2'), { type: 'doughnut', data: { labels: Object.keys(counts).map(statusAr), datasets: [{ data: Object.values(counts), backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#ef4444', '#64748b'] }] }, options: { responsive: true, maintainAspectRatio: false } });
+      const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false, // يسمح لنا بالتحكم في الارتفاع عبر CSS
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        }
+      };
+
+      // 1. رسم بياني للمبيعات (ارتفاع ثابت)
+      const ctx1 = document.getElementById('ch1');
+      if (ctx1) {
+        ctx1.parentElement.style.height = "250px"; // تثبيت الارتفاع
+        new Chart(ctx1, {
+          type: 'line',
+          data: {
+            labels: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'],
+            datasets: [{
+              data: [1200, 1900, 800, 1500, 2200, 3000, 2500],
+              borderColor: '#2563eb',
+              backgroundColor: 'rgba(37, 99, 235, 0.1)',
+              fill: true,
+              tension: 0.4
+            }]
+          },
+          options: chartOptions
+        });
+      }
+
+      // 2. رسم بياني لتوزيع الحالات (دائري ثابت)
+      const ctx2 = document.getElementById('ch2');
+      if (ctx2) {
+        ctx2.parentElement.style.height = "250px"; // تثبيت الارتفاع
+        new Chart(ctx2, {
+          type: 'doughnut',
+          data: {
+            labels: ['تم التسليم', 'قيد الشحن', 'مرتجع'],
+            datasets: [{
+              data: [65, 20, 15],
+              backgroundColor: ['#10b981', '#2563eb', '#ef4444'],
+              borderWidth: 0,
+              hoverOffset: 10
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%' // جعل الدائرة أنحف وأكثر أناقة
+          }
+        });
+      }
     };
+
     function kpi(ic, label, value, delta, dir, bg) { return `<div class="kpi"><div class="ic" style="background:${bg}">${ic}</div><div style="flex:1"><div class="label">${label}</div><div class="value">${value}</div><div class="delta ${dir}">${delta} عن الشهر السابق</div></div></div>` }
     function statusAr(s) { return { pending: 'قيد الانتظار', processing: 'قيد المعالجة', packed: 'تم التغليف', shipped: 'تم الشحن', delivered: 'تم التسليم', returned: 'مرتجع', cancelled: 'ملغي' }[s] || s }
 
     /* ===========================================================
        12. PRODUCTS
     =========================================================== */
+    // --- 1. واجهة صفحة المنتجات ---
     function Products() {
-      return `<div class="card">
-    <div class="flex between mb wrap">
-      <div class="search-box"><span class="ico">🔍</span><input id="prodSearch" placeholder="بحث بالاسم أو SKU..." oninput="filterProducts()"></div>
-      <div class="flex">
-        <button class="btn" onclick="exportCSV('products')">📤 تصدير</button>
-        <button class="btn" onclick="importExcel()">📥 استيراد Excel</button>
-        <button class="btn primary" onclick="openProductForm()">+ منتج جديد</button>
+      return `
+  <div class="bg-white rounded-[2rem] p-6 border border-slate-100 soft-shadow">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+      <div>
+        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+          <i data-lucide="package" class="text-blue-600"></i> إدارة المخزون
+        </h3>
+        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">إضافة، تعديل، واستيراد المنتجات</p>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button onclick="exportCSV('products')" class="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-100 transition-all">
+          <i data-lucide="download" class="w-4 h-4"></i> تصدير
+        </button>
+        <label class="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs hover:bg-blue-100 transition-all cursor-pointer">
+          <i data-lucide="file-up" class="w-4 h-4"></i> استيراد (إضافة) <input type="file" accept=".csv" style="display:none" onchange="importProductsCSV(this)">
+        </label>
+        <button onclick="openProductForm()" class="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-xl font-black text-xs shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
+          <i data-lucide="plus" class="w-4 h-4"></i> منتج جديد
+        </button>
       </div>
     </div>
-    <div class="table-wrap"><table><thead><tr>
-      <th>المنتج</th><th>SKU</th><th>التصنيف</th><th>التكلفة</th><th>السعر</th><th>الربح</th><th>المخزون</th><th>توقع النفاد</th><th>إجراءات</th>
-    </tr></thead><tbody id="prodBody">${prodRows(State.data.products)}</tbody></table></div>
+
+    <div class="table-wrap border-none overflow-x-auto">
+      <table class="w-full text-right">
+        <thead>
+          <tr class="text-slate-400 text-[10px] font-black uppercase border-b border-slate-100">
+            <th class="pb-4">المنتج</th>
+            <th class="pb-4">SKU</th>
+            <th class="pb-4">الوزن</th>
+            <th class="pb-4">التوفر</th>
+            <th class="pb-4">السعر</th>
+            <th class="pb-4">المخزون</th>
+            <th class="pb-4 text-left">إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="prodBody">${prodRows(State.data.products)}</tbody>
+      </table>
+    </div>
   </div>`;
     }
+
+    // --- 2. عرض صفوف المنتجات ---
     function prodRows(list) {
-      return list.map(p => {
-        const cat = State.data.categories.find(c => c.id === p.cat)?.name || '-';
-        const profit = p.price - p.cost;
-        const margin = ((profit / p.price) * 100).toFixed(0);
-        const days = p.velocity > 0 ? Math.round(p.stock / p.velocity) : '∞';
-        const low = p.stock <= p.minStock;
-        return `<tr>
-      <td><div class="flex"><div style="font-size:26px">${p.img}</div><div><div style="font-weight:700">${p.name}</div><div class="muted" style="font-size:11px">${cat}</div></div></div></td>
-      <td><code>${p.sku}</code></td>
-      <td>${cat}</td>
-      <td>${money(p.cost)}</td>
-      <td><b>${money(p.price)}</b></td>
-      <td><span style="color:var(--success);font-weight:700">${money(profit)} (${margin}%)</span></td>
-      <td>${low ? `<span style="color:var(--danger);font-weight:800">${p.stock} ⚠️</span>` : `<b>${p.stock}</b>`}</td>
-      <td><span class="muted">${days} يوم</span></td>
-      <td><button class="btn sm" onclick="openProductForm('${p.id}')">تعديل</button> <button class="btn sm danger" onclick="delProduct('${p.id}')">×</button></td>
-    </tr>`;
-      }).join('') || `<tr><td colspan="9" style="text-align:center;padding:30px" class="muted">لا توجد منتجات</td></tr>`;
+      return list.map(p => `
+    <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-all">
+      <td class="py-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-lg">${p.img || '📦'}</div>
+          <div>
+            <div class="font-black text-slate-800 text-sm">${p.name}</div>
+            <div class="text-[10px] text-slate-400 font-bold line-clamp-1 max-w-[150px]">${p.description || 'لا يوجد وصف'}</div>
+          </div>
+        </div>
+      </td>
+      <td class="py-4 font-mono text-[11px] text-slate-400">${p.sku}</td>
+      <td class="py-4 text-xs font-bold text-slate-600">${p.weight || '0'} كجم</td>
+      <td class="py-4">
+        ${p.isAvailable !== false ?
+          '<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg text-[10px] font-black">متوفر</span>' :
+          '<span class="bg-red-50 text-red-600 px-2 py-1 rounded-lg text-[10px] font-black">غير متوفر</span>'}
+      </td>
+      <td class="py-4 font-black text-blue-600">${money(p.price)}</td>
+      <td class="py-4 font-black text-slate-800">${p.stock}</td>
+      <td class="py-4 text-left">
+        <button onclick="openProductForm('${p.id}')" class="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-blue-600"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+        <button onclick="delProduct('${p.id}')" class="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" class="py-20 text-center text-slate-300">لا توجد منتجات</td></tr>';
     }
+
+    // --- 3. استيراد منتجات من ملف (إضافة للموجود) ---
+    window.importProductsCSV = (input) => {
+      const file = input.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const lines = e.target.result.split('\n').filter(l => l.trim());
+        let added = 0;
+        lines.slice(1).forEach(line => {
+          const c = line.split(',').map(v => v.replace(/"/g, '').trim());
+          if (!c[0]) return;
+          State.data.products.push({
+            id: uid(), name: c[0], sku: c[1] || uid(), weight: c[2] || 0,
+            isAvailable: c[3] !== 'false', description: c[4] || '',
+            cost: Number(c[5]) || 0, price: Number(c[6]) || 0, stock: Number(c[7]) || 0, cat: 'c1'
+          });
+          added++;
+        });
+        Store.save(); render(); toast(`تمت إضافة ${added} منتج جديد للقائمة ✅`, 'success');
+      };
+      reader.readAsText(file, 'UTF-8');
+    };
+
     function filterProducts() {
       const q = document.getElementById('prodSearch').value.toLowerCase();
       const list = State.data.products.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q));
@@ -1870,95 +1977,45 @@
       </div>`).join('');
     }
 
+    // --- 4. نموذج إضافة/تعديل منتج المطور ---
     function openProductForm(id) {
-      const p = id ? State.data.products.find(x => x.id === id) : { img: '📦', cost: 0, price: 0, stock: 0, minStock: 5, images: [], velocity: 1 };
-
-      // تخزين الصور في متغير عالمي مؤقت للتحكم فيها بسهولة
-      window._prodImgs = [...(p.images || [])];
-
-      const cats = State.data.categories.map(c => `<option value="${c.id}" ${p.cat === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
+      const p = id ? State.data.products.find(x => x.id === id) : { isAvailable: true, weight: 0, cost: 0, price: 0, stock: 0 };
 
       modal(`
-    <h2>${id ? 'تعديل' : 'إضافة'} منتج</h2>
-    <form id="prodForm">
-      <div class="grid cols-2">
-        <div class="row"><label>اسم المنتج</label><input name="name" value="${p.name || ''}" required></div>
-        <div class="row"><label>SKU</label><input name="sku" value="${p.sku || ''}" required></div>
-        <div class="row"><label>التصنيف</label><select name="cat">${cats}</select></div>
-        <div class="row"><label>إيموجي (اختياري)</label><input name="img" value="${p.img || '📦'}"></div>
-        <div class="row"><label>سعر التكلفة</label><input name="cost" type="number" value="${p.cost}" required></div>
-        <div class="row"><label>سعر البيع</label><input name="price" type="number" value="${p.price}" required></div>
-        <div class="row"><label>المخزون</label><input name="stock" type="number" value="${p.stock}" required></div>
-        <div class="row"><label>حد التنبيه</label><input name="minStock" type="number" value="${p.minStock}"></div>
+    <h2 class="text-xl font-black mb-6">${id ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h2>
+    <form id="prodForm" class="space-y-4 text-right">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="row"><label>اسم المنتج</label><input name="name" value="${p.name || ''}" required class="bg-slate-50 border-none rounded-2xl p-4"></div>
+        <div class="row"><label>SKU (كود)</label><input name="sku" value="${p.sku || ''}" class="bg-slate-50 border-none rounded-2xl p-4"></div>
       </div>
-      
-      <div class="row" style="margin-top:15px">
-        <label>📷 صور المنتج</label>
-        <div id="imgList" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px"></div>
-        
-        <div class="flex" style="gap:8px; margin-bottom:8px">
-          <input id="imgUrlInput" placeholder="ضع رابط الصورة هنا..." style="flex:1">
-          <button type="button" class="btn" onclick="addNewImgUrl()">+ إضافة رابط</button>
+      <div class="row"><label>وصف مختصر</label><textarea name="description" class="bg-slate-50 border-none rounded-2xl p-4 w-full h-20">${p.description || ''}</textarea></div>
+      <div class="grid grid-cols-3 gap-4">
+        <div class="row"><label>الوزن (كجم)</label><input name="weight" type="number" step="0.01" value="${p.weight}" class="bg-slate-50 border-none rounded-2xl p-4"></div>
+        <div class="row"><label>التكلفة</label><input name="cost" type="number" value="${p.cost}" class="bg-slate-50 border-none rounded-2xl p-4"></div>
+        <div class="row"><label>سعر البيع</label><input name="price" type="number" value="${p.price}" class="bg-slate-50 border-none rounded-2xl p-4"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="row"><label>المخزون</label><input name="stock" type="number" value="${p.stock}" class="bg-slate-50 border-none rounded-2xl p-4"></div>
+        <div class="row"><label>الحالة</label>
+          <select name="isAvailable" class="bg-slate-50 border-none rounded-2xl p-4 font-bold">
+            <option value="true" ${p.isAvailable !== false ? 'selected' : ''}>✅ متوفر في المخزن</option>
+            <option value="false" ${p.isAvailable === false ? 'selected' : ''}>❌ غير متوفر حالياً</option>
+          </select>
         </div>
-        
-        <label class="btn" style="cursor:pointer; display:inline-block">
-          📁 رفع من الجهاز <input type="file" accept="image/*" multiple style="display:none" onchange="handleFileImgs(this)">
-        </label>
       </div>
-
-      <div class="modal-actions">
-        <button type="button" class="btn" onclick="closeModal()">إلغاء</button>
-        <button class="btn primary">حفظ المنتج</button>
+      <div class="modal-actions mt-8">
+        <button type="button" class="px-6 py-3 bg-slate-100 rounded-2xl font-bold" onclick="closeModal()">إلغاء</button>
+        <button class="px-10 py-3 bg-blue-600 text-white rounded-2xl font-black shadow-lg">حفظ المنتج</button>
       </div>
     </form>
   `);
 
-      // تشغيل عرض الصور لأول مرة
-      refreshImgListUI();
-
-      // دوال داخلية للتعامل مع الإضافة
-      window.addNewImgUrl = () => {
-        const inp = document.getElementById('imgUrlInput');
-        if (inp.value.trim()) {
-          window._prodImgs.push(inp.value.trim());
-          inp.value = '';
-          refreshImgListUI();
-        }
-      };
-
-      window.handleFileImgs = (input) => {
-        Array.from(input.files).forEach(file => {
-          const reader = new FileReader();
-          reader.onload = e => {
-            window._prodImgs.push(e.target.result);
-            refreshImgListUI();
-          };
-          reader.readAsDataURL(file);
-        });
-      };
-
-      // عند حفظ النموذج
       document.getElementById('prodForm').onsubmit = e => {
         e.preventDefault();
         const fd = Object.fromEntries(new FormData(e.target));
-        // تحويل الأرقام
-        fd.cost = Number(fd.cost);
-        fd.price = Number(fd.price);
-        fd.stock = Number(fd.stock);
-        fd.minStock = Number(fd.minStock);
-        fd.images = [...window._prodImgs]; // حفظ الصور من المصفوفة المؤقتة
-        fd.velocity = p.velocity || 1;
-
-        if (id) {
-          Object.assign(p, fd);
-        } else {
-          State.data.products.push({ id: uid(), ...fd });
-        }
-
-        Store.save();
-        closeModal();
-        render(); // إعادة بناء صفحة المنتجات
-        toast('تم حفظ المنتج بنجاح ✅', 'success');
+        fd.isAvailable = fd.isAvailable === 'true';
+        if (id) Object.assign(p, fd); else State.data.products.push({ id: uid(), ...fd });
+        Store.save(); closeModal(); render(); toast('تم الحفظ بنجاح');
       };
     }
 
@@ -2343,82 +2400,172 @@
        15. CUSTOMERS / CRM
     =========================================================== */
     function Customers() {
-      return `<div class="card">
-    <div class="flex between mb wrap">
-      <div class="search-box"><span class="ico">🔍</span><input placeholder="بحث بالاسم أو الهاتف..." oninput="filterCustomers(this.value)"></div>
-      <div class="flex wrap" style="gap:8px">
-        <button class="btn" onclick="exportCustomersExcel()">📥 تحميل Excel</button>
-        <label class="btn" style="cursor:pointer">📤 رفع Excel<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importCustomersExcel(this)"></label>
-        <button class="btn primary" onclick="openCustomerForm()">+ عميل جديد</button>
+      return `
+  <div class="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 soft-shadow">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+      <div>
+        <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
+          <i data-lucide="users" class="text-blue-600"></i> إدارة علاقات العملاء
+        </h3>
+        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">تتبع التصنيفات، المشتريات، ونقاط الولاء</p>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button onclick="exportCustomersExcel()" class="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-100 transition-all">
+          <i data-lucide="download" class="w-4 h-4"></i> تحميل Excel
+        </button>
+        <label class="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-100 transition-all cursor-pointer">
+          <i data-lucide="upload" class="w-4 h-4"></i> رفع ملف <input type="file" accept=".csv" style="display:none" onchange="importCustomersExcel(this)">
+        </label>
+        <button onclick="openCustomerForm()" class="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-xl font-black text-xs shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i> عميل جديد
+        </button>
       </div>
     </div>
-    <div class="table-wrap"><table><thead><tr>
-      <th>الاسم</th><th>الهاتف</th><th>المحافظة</th><th>العنوان</th><th>إجمالي المشتريات</th><th>نقاط الولاء</th><th>التصنيف</th><th>إجراءات</th>
-    </tr></thead><tbody id="cusBody">${cusRows(State.data.customers)}</tbody></table></div>
+
+    <div class="table-wrap border-none overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="text-slate-400 text-[10px] font-black uppercase tracking-[2px] border-b border-slate-100 text-right">
+            <th class="pb-4">كود العميل</th>
+            <th class="pb-4">الإسم</th>
+            <th class="pb-4">التليفون</th>
+            <th class="pb-4">تليفون إضافي</th>
+            <th class="pb-4">المحافظة</th>
+            <th class="pb-4">إجمالي المشتريات</th>
+            <th class="pb-4">نقاط الولاء</th>
+            <th class="pb-4">التصنيف</th>
+            <th class="pb-4 text-left">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="cusBody">
+          ${cusRows(State.data.customers)}
+        </tbody>
+      </table>
+    </div>
   </div>`;
     }
     function cusRows(list) {
-      return list.map(c => `<tr>
-    <td><b>${c.name}</b></td>
-    <td>${c.phone || '-'}${c.phone2 ? `<br><span class="muted" style="font-size:11px">${c.phone2}</span>` : ''}</td>
-    <td>${c.gov || '-'}</td>
-    <td class="muted" style="font-size:12px">${(c.address || '').slice(0, 30) || '-'}</td>
-    <td>${money(c.total || 0)}</td>
-    <td><span class="pill">${c.points} نقطة</span></td>
-    <td>${c.vip ? '<span class="tag delivered">VIP ⭐</span>' : '<span class="tag cancelled">عادي</span>'}</td>
-    <td><button class="btn sm" onclick="openCustomerForm('${c.id}')">تعديل</button></td>
-  </tr>`).join('');
+      return list.map(c => {
+        // تلوين التصنيف
+        const catStyles = {
+          'جديد': 'bg-blue-50 text-blue-600 border-blue-100',
+          'مميز': 'bg-emerald-50 text-emerald-600 border-emerald-100',
+          'سئ': 'bg-red-50 text-red-600 border-red-100',
+          'يجب متابعته': 'bg-amber-50 text-amber-600 border-amber-100'
+        };
+        const style = catStyles[c.category] || 'bg-slate-50 text-slate-400';
+
+        return `
+    <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors group">
+      <td class="py-4 font-mono text-[11px] text-slate-400 font-bold">${c.code || '---'}</td>
+      <td class="py-4 font-black text-slate-800 text-sm">${c.name}</td>
+      <td class="py-4 font-bold text-slate-600 text-xs">${c.phone || '-'}</td>
+      <td class="py-4 text-slate-400 text-xs">${c.phone2 || '-'}</td>
+      <td class="py-4 text-slate-600 font-bold text-xs">${c.gov || '-'}</td>
+      <td class="py-4 font-black text-blue-600 text-sm">${money(c.total || 0)}</td>
+      <td class="py-4 text-center">
+        <span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-lg font-black text-[10px]">${c.points || 0}</span>
+      </td>
+      <td class="py-4">
+        <span class="px-3 py-1 rounded-full border ${style} font-black text-[10px] shadow-sm">
+           ${c.category || 'جديد'}
+        </span>
+      </td>
+      <td class="py-4 text-left">
+        <button onclick="openCustomerForm('${c.id}')" class="p-2 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all">
+          <i data-lucide="edit-3" class="w-4 h-4"></i>
+        </button>
+      </td>
+    </tr>`;
+      }).join('') || '<tr><td colspan="9" class="py-20 text-center text-slate-300">لا يوجد عملاء مسجلين</td></tr>';
     }
+
     function filterCustomers(q) { q = q.toLowerCase(); document.getElementById('cusBody').innerHTML = cusRows(State.data.customers.filter(c => c.name.toLowerCase().includes(q) || (c.phone || '').includes(q) || (c.phone2 || '').includes(q))); }
     function openCustomerForm(id) {
-      const c = id ? State.data.customers.find(x => x.id === id) : { points: 0, total: 0 };
-      const govOpts = GOVS.map(g => `<option value="${g}" ${(c.gov || '') === g ? 'selected' : ''}>${g}</option>`).join('');
-      modal(`<h2>${id ? 'تعديل' : 'إضافة'} عميل</h2>
-    <form id="cusForm">
-      <div class="row"><label>الاسم</label><input name="name" value="${c.name || ''}" required></div>
-      <div class="grid cols-2">
-        <div class="row"><label>📱 الهاتف الأول</label><input name="phone" value="${c.phone || ''}" placeholder="01xxxxxxxxx"></div>
-        <div class="row"><label>📱 الهاتف الثاني</label><input name="phone2" value="${c.phone2 || ''}" placeholder="اختياري"></div>
+      const c = id ? State.data.customers.find(x => x.id === id) : { category: 'جديد', total: 0, points: 0, gov: 'القاهرة' };
+      const categories = ['جديد', 'مميز', 'سئ', 'يجب متابعته'];
+      const govOpts = GOVS.map(g => `<option value="${g}" ${c.gov === g ? 'selected' : ''}>${g}</option>`).join('');
+
+      modal(`
+    <h2 class="text-xl font-black mb-6">${id ? 'تعديل بيانات العميل' : 'إضافة عميل جديد'}</h2>
+    <form id="cusForm" class="space-y-4 text-right">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="row"><label>الإسم بالكامل</label><input name="name" value="${c.name || ''}" required class="bg-slate-50 border-none rounded-2xl p-4"></div>
+        <div class="row"><label>كود العميل (اختياري)</label><input name="code" value="${c.code || ''}" class="bg-slate-50 border-none rounded-2xl p-4 font-mono"></div>
       </div>
-      <div class="row"><label>المحافظة</label><select name="gov">${govOpts}</select></div>
-      <div class="row"><label>العنوان التفصيلي</label><textarea name="address" rows="2" style="resize:vertical">${c.address || ''}</textarea></div>
-      <div class="row"><label><input type="checkbox" name="vip" ${c.vip ? 'checked' : ''}> عميل VIP ⭐</label></div>
-      <div class="modal-actions"><button type="button" class="btn" onclick="closeModal()">إلغاء</button><button class="btn primary">حفظ</button></div>
-    </form>`);
+      <div class="grid grid-cols-2 gap-4">
+        <div class="row"><label>تليفون</label><input name="phone" value="${c.phone || ''}" required class="bg-slate-50 border-none rounded-2xl p-4"></div>
+        <div class="row"><label>تليفون إضافي</label><input name="phone2" value="${c.phone2 || ''}" class="bg-slate-50 border-none rounded-2xl p-4"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="row"><label>المحافظة</label><select name="gov" class="bg-slate-50 border-none rounded-2xl p-4">${govOpts}</select></div>
+        <div class="row"><label>التصنيف</label>
+          <select name="category" class="bg-slate-50 border-none rounded-2xl p-4 font-bold text-blue-600">
+            ${categories.map(cat => `<option value="${cat}" ${c.category === cat ? 'selected' : ''}>${cat}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="row"><label>العنوان</label><textarea name="address" class="bg-slate-50 border-none rounded-2xl p-4 w-full">${c.address || ''}</textarea></div>
+      
+      <div class="modal-actions mt-8">
+        <button type="button" class="px-6 py-3 bg-slate-100 rounded-2xl font-bold" onclick="closeModal()">إلغاء</button>
+        <button class="px-10 py-3 bg-blue-600 text-white rounded-2xl font-black shadow-lg">حفظ البيانات</button>
+      </div>
+    </form>
+  `);
+
       document.getElementById('cusForm').onsubmit = e => {
         e.preventDefault();
-        const fd = Object.fromEntries(new FormData(e.target)); fd.vip = !!fd.vip;
-        if (id) Object.assign(c, fd); else State.data.customers.push({ id: uid(), points: 0, total: 0, ...fd });
-        Store.save(); closeModal(); render(); toast('تم الحفظ', 'success');
+        const fd = Object.fromEntries(new FormData(e.target));
+        if (id) Object.assign(c, fd);
+        else State.data.customers.push({ id: uid(), total: 0, points: 0, ...fd });
+        Store.save(); closeModal(); render(); toast('تم الحفظ بنجاح');
       };
     }
 
     function exportCustomersExcel() {
-      const headers = ['الاسم', 'الهاتف الأول', 'الهاتف الثاني', 'المحافظة', 'العنوان', 'VIP', 'نقاط الولاء', 'إجمالي المشتريات'];
-      const rows = State.data.customers.map(c => [c.name, c.phone || '', c.phone2 || '', c.gov || '', c.address || '', c.vip ? 'نعم' : 'لا', c.points || 0, c.total || 0]);
-      const csv = [headers.join(','), ...rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','))].join('\n');
-      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'العملاء.csv'; a.click();
-      toast('تم تصدير بيانات العملاء', 'success');
+      const headers = ['كود العميل', 'الإسم', 'تليفون', 'تليفون إضافي', 'المحافظة', 'العنوان', 'إجمالي المشتريات', 'نقاط الولاء', 'تصنيف العميل'];
+      const rows = State.data.customers.map(c => [
+        c.code || '', c.name, c.phone || '', c.phone2 || '', c.gov || '', c.address || '', c.total || 0, c.points || 0, c.category || 'جديد'
+      ]);
+
+      const csvContent = "\ufeff" + [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'قائمة_العملاء.csv'; a.click();
     }
+
     function importCustomersExcel(input) {
       const file = input.files[0]; if (!file) return;
       const reader = new FileReader();
       reader.onload = e => {
-        const text = e.target.result;
-        const lines = text.split('\n').filter(l => l.trim());
+        const lines = e.target.result.split('\n').filter(l => l.trim());
         let imported = 0;
         lines.slice(1).forEach(line => {
-          const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
-          if (!cols[0]) return;
-          const existing = State.data.customers.find(c => c.phone === cols[1]);
-          if (existing) { Object.assign(existing, { name: cols[0] || existing.name, phone: cols[1] || existing.phone, phone2: cols[2] || existing.phone2 || '', gov: cols[3] || existing.gov || '', address: cols[4] || existing.address || '', vip: cols[5] === 'نعم' }); }
-          else { State.data.customers.push({ id: uid(), name: cols[0], phone: cols[1] || '', phone2: cols[2] || '', gov: cols[3] || 'القاهرة', address: cols[4] || '', vip: cols[5] === 'نعم', points: +cols[6] || 0, total: +cols[7] || 0 }); imported++; }
+          const cols = line.split(',').map(c => c.replace(/"/g, '').trim());
+          if (!cols[1]) return; // يجب وجود الاسم
+
+          const customerData = {
+            id: uid(),
+            code: cols[0] || ('CUS-' + (State.data.customers.length + imported + 1000)),
+            name: cols[1],
+            phone: cols[2] || '',
+            phone2: cols[3] || '',
+            gov: cols[4] || 'القاهرة',
+            address: cols[5] || '',
+            total: parseFloat(cols[6]) || 0,
+            points: parseInt(cols[7]) || 0,
+            category: cols[8] || 'جديد'
+          };
+
+          // إذا كان العميل موجوداً (برقم الهاتف)، قم بتحديثه
+          const existing = State.data.customers.find(x => x.phone === customerData.phone && customerData.phone !== '');
+          if (existing) Object.assign(existing, customerData);
+          else { State.data.customers.push(customerData); imported++; }
         });
-        Store.save(); render(); toast(`تم استيراد ${imported} عميل جديد`, 'success');
+        Store.save(); render(); toast(`تم تحديث البيانات واستيراد ${imported} عملاء جدد ✅`, 'success');
       };
       reader.readAsText(file, 'UTF-8');
-      input.value = '';
     }
 
     /* ===== CATEGORIES / WAREHOUSES / COUPONS ===== */

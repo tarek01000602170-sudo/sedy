@@ -1869,16 +1869,17 @@
           <i data-lucide="package" class="text-blue-600"></i> إدارة المخزون الشاملة
         </h3>
         <div id="bulkActions" class="hidden mt-2 animate-pop">
-            <button onclick="deleteSelectedProducts()" class="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl font-black text-xs border border-red-100 hover:bg-red-600 hover:text-white transition-all">
-                <i data-lucide="trash-2" class="w-4 h-4"></i> حذف المحدد
-            </button>
+            <button onclick="deleteSelectedProducts()" class="px-4 py-2 bg-red-50 text-red-600 rounded-xl font-black text-xs border border-red-100">حذف المحدد</button>
         </div>
       </div>
-
       <div class="flex flex-wrap gap-2">
-        <label class="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-bold text-xs hover:bg-emerald-100 transition-all cursor-pointer shadow-sm border border-emerald-100">
+        <!-- زر التصدير الجديد -->
+  <button onclick="exportExcelProducts()" class="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs cursor-pointer border border-blue-100 shadow-sm transition-all hover:bg-blue-100">
+    <i data-lucide="download" class="w-4 h-4"></i> تصدير Excel
+  </button>
+        <label class="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-bold text-xs cursor-pointer border border-emerald-100 shadow-sm">
           <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> استيراد Excel
-          <input type="file" id="excelInput" accept=".xlsx, .xls" style="display:none" onchange="importExcelProducts(this)">
+          <input type="file" accept=".xlsx, .xls" style="display:none" onchange="importExcelProducts(this)">
         </label>
         <button onclick="openProductForm()" class="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-xl font-black text-xs shadow-lg shadow-blue-200">
           <i data-lucide="plus" class="w-4 h-4"></i> منتج جديد
@@ -1897,9 +1898,9 @@
             <th class="pb-4">التكلفة</th>
             <th class="pb-4">السعر</th>
             <th class="pb-4">الربح</th>
-            <th class="pb-4">الوزن</th>
-            <th class="pb-4">متوفر</th>
-            <th class="pb-4">المخزون</th>
+            <th class="pb-4 text-center">الوزن</th>
+            <th class="pb-4 text-center">متوفر</th>
+            <th class="pb-4 text-center">المخزون</th>
             <th class="pb-4 text-left">إجراءات</th>
           </tr>
         </thead>
@@ -1909,43 +1910,98 @@
   </div>`;
     }
 
+    window.exportExcelProducts = () => {
+      // 1. تحضير البيانات بالتنسيق الذي يريده المستخدم
+      const products = State.data.products || [];
+      if (products.length === 0) return toast('لا توجد منتجات لتصديرها', 'warning');
+
+      const excelData = products.map(p => {
+        const catName = State.data.categories.find(c => c.id === p.cat)?.name || 'عام';
+        const cost = parseFloat(p.cost) || 0;
+        const price = parseFloat(p.price) || 0;
+
+        return {
+          'الاسم': p.name || '',
+          'sku': p.sku || '',
+          'التصنيف': catName,
+          'التكلفة': cost,
+          'السعر': price,
+          'الربح': price - cost,
+          'الوزن (جرام)': p.weightGram || 0,
+          'متوفر': (p.isAvailable !== false) ? 'نعم' : 'لا',
+          'وصف مختصر': p.shortDesc || '',
+          'المخزون': p.stock || 0
+        };
+      });
+
+      try {
+        // 2. إنشاء ورقة العمل (Worksheet)
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+        // 3. ضبط اتجاه الصفحة ليكون من اليمين لليسار (RTL) في الإكسيل
+        worksheet['!dir'] = 'rtl';
+
+        // 4. إنشاء كتاب العمل (Workbook) وتحميل الملف
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "المنتجات");
+
+        // 5. تنفيذ عملية التحميل
+        XLSX.writeFile(workbook, `مخزون_سيدي_${new Date().toLocaleDateString('ar-EG')}.xlsx`);
+
+        toast('تم تصدير ملف الإكسيل بنجاح ✅', 'success');
+      } catch (err) {
+        console.error("Export Error:", err);
+        toast('حدث خطأ أثناء التصدير', 'danger');
+      }
+    };
+
     // --- 2. عرض صفوف المنتجات ---
     function prodRows(list) {
       return list.map(p => {
         const catName = State.data.categories.find(c => c.id === p.cat)?.name || 'عام';
-        const profit = p.price - p.cost;
+        const cost = parseFloat(p.cost) || 0;
+        const price = parseFloat(p.price) || 0;
+        const profit = price - cost;
 
         return `
     <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-all group">
-      <td class="py-4 text-center">
-        <input type="checkbox" name="prodCheck" value="${p.id}" onchange="updateBulkUI()" class="accent-blue-600">
-      </td>
+      <td class="py-4 text-center"><input type="checkbox" name="prodCheck" value="${p.id}" onchange="updateBulkUI()" class="accent-blue-600"></td>
+      
       <td class="py-4">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-lg shadow-sm border border-slate-100">${p.img || '📦'}</div>
+          <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-lg border border-slate-100 shadow-sm">${p.img || '📦'}</div>
           <div>
-            <div class="font-black text-slate-800 text-sm">${p.name}</div>
-            <div class="text-[10px] text-slate-400 font-bold max-w-[120px] truncate" title="${p.shortDesc || ''}">${p.shortDesc || 'لا يوجد وصف'}</div>
+            <div class="font-black text-slate-800 text-sm">${p.name || 'بدون اسم'}</div>
+            <div class="text-[9px] text-slate-400 font-bold max-w-[150px] truncate">${p.shortDesc || ''}</div>
           </div>
         </div>
       </td>
-      <td class="py-4 font-mono text-[10px] text-slate-400">${p.sku}</td>
-      <td class="py-4 text-xs font-bold text-slate-600">${catName}</td>
-      <td class="py-4 text-xs font-bold text-slate-500">${money(p.cost)}</td>
-      <td class="py-4 font-black text-blue-600 text-sm">${money(p.price)}</td>
+
+      <td class="py-4 font-mono text-[10px] text-slate-400">${p.sku || '---'}</td>
+      
+      <td class="py-4"><span class="bg-blue-50 text-blue-600 px-2 py-1 rounded-lg text-[10px] font-black italic border border-blue-100">${catName}</span></td>
+      
+      <td class="py-4 text-xs font-bold text-slate-500">${money(cost)}</td>
+      
+      <td class="py-4 font-black text-blue-600 text-sm">${money(price)}</td>
+      
       <td class="py-4 font-black text-emerald-600 text-sm">${money(profit)}</td>
-      <td class="py-4 text-xs font-bold text-slate-600">${p.weight || '0'} كجم</td>
-      <td class="py-4">
+      
+      <td class="py-4 text-center text-xs font-bold text-slate-600">${p.weightGram || 0} جرام</td>
+      
+      <td class="py-4 text-center">
         ${p.isAvailable !== false ?
-            '<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg text-[9px] font-black border border-emerald-100 shadow-sm italic">متوفر</span>' :
-            '<span class="bg-red-50 text-red-600 px-2 py-1 rounded-lg text-[9px] font-black border border-red-100 shadow-sm italic">غير متوفر</span>'}
+            '<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg text-[9px] font-black">نعم</span>' :
+            '<span class="bg-red-50 text-red-600 px-2 py-1 rounded-lg text-[9px] font-black">لا</span>'}
       </td>
-      <td class="py-4 font-black text-slate-800">${p.stock}</td>
+      
+      <td class="py-4 text-center font-black text-slate-800">${p.stock || 0}</td>
+      
       <td class="py-4 text-left">
-        <button onclick="openProductForm('${p.id}')" class="p-2 text-slate-400 hover:text-blue-600 transition-all"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+        <button onclick="openProductForm('${p.id}')" class="p-2 text-slate-400 hover:text-blue-600"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
       </td>
     </tr>`;
-      }).join('') || '<tr><td colspan="11" class="py-20 text-center text-slate-300">لا توجد منتجات.. استورد ملف Excel</td></tr>';
+      }).join('') || '<tr><td colspan="11" class="py-20 text-center text-slate-300">استورد ملف إكسيل للبدء</td></tr>';
     }
 
     // 1. تحديد الكل
@@ -1978,21 +2034,20 @@
       const file = input.files[0];
       if (!file) return;
 
-      toast('جاري قراءة البيانات العربية...', 'info');
+      toast('جاري معالجة البيانات...', 'info');
 
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
-          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
 
           let added = 0;
           jsonData.forEach(row => {
             const find = (keys) => {
-              const key = Object.keys(row).find(k => keys.includes(k.trim()));
-              return key ? row[key] : null;
+              const k = Object.keys(row).find(key => keys.includes(key.trim()));
+              return k ? row[k] : null;
             };
 
             const name = find(['الاسم', 'المنتج', 'name']);
@@ -2000,12 +2055,12 @@
               State.data.products.push({
                 id: uid(),
                 name: String(name),
-                sku: String(find(['sku', 'كود', 'code']) || uid()),
-                cat: 'c1', // تصنيف افتراضي
-                cost: parseFloat(find(['التكلفة', 'cost', 'سعر التكلفة'])) || 0,
+                sku: String(find(['sku', 'كود', 'code', 'SKU']) || uid()),
+                cat: 'c1',
+                cost: parseFloat(find(['التكلفة', 'cost', 'سعر التكلفة', 'التكلفه'])) || 0,
                 price: parseFloat(find(['السعر', 'price', 'سعر البيع'])) || 0,
-                weight: parseFloat(find(['الوزن', 'weight', 'وزن القطعة'])) || 0,
-                isAvailable: find(['متوفر', 'الحالة'])?.toString().includes('نعم') || true,
+                weightGram: parseFloat(find(['الوزن', 'weight', 'الجرام', 'وزن القطعة'])) || 0,
+                isAvailable: String(find(['متوفر', 'الحالة', 'available']) || '').includes('لا') ? false : true,
                 shortDesc: find(['وصف مختصر', 'وصف', 'description']) || '',
                 stock: parseInt(find(['المخزون', 'stock', 'الكمية'])) || 0,
                 images: []
@@ -2015,8 +2070,8 @@
           });
 
           Store.save(); render();
-          toast(`تمت إضافة ${added} منتج للقائمة بنجاح ✅`, 'success');
-        } catch (err) { toast('فشل الاستيراد.. تأكد من تنسيق الملف', 'danger'); }
+          toast(`تم استيراد ${added} منتج وتوزيعهم على الخانات بدقة ✅`, 'success');
+        } catch (err) { toast('خطأ في قراءة الملف', 'danger'); }
       };
       reader.readAsArrayBuffer(file);
       input.value = '';
@@ -2071,51 +2126,61 @@
 
     // --- 4. نموذج إضافة/تعديل منتج المطور ---
     function openProductForm(id) {
-      const p = id ? State.data.products.find(x => x.id === id) : { isAvailable: true, weight: 0, cost: 0, price: 0, stock: 0, shortDesc: '' };
+      const p = id ? State.data.products.find(x => x.id === id) : { isAvailable: true, weightGram: 0, cost: 0, price: 0, stock: 0, shortDesc: '' };
       const cats = State.data.categories.map(c => `<option value="${c.id}" ${p.cat === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
 
       modal(`
-    <h2 class="text-xl font-black mb-6 text-slate-800">${id ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h2>
-    <form id="prodForm" class="space-y-4 text-right">
-      <div class="grid grid-cols-2 gap-4">
-        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">اسم المنتج</label><input name="name" value="${p.name || ''}" required class="bg-slate-50 border-none rounded-2xl p-4 w-full"></div>
-        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">كود المنتج SKU</label><input name="sku" value="${p.sku || ''}" class="bg-slate-50 border-none rounded-2xl p-4 w-full"></div>
-      </div>
-      
-      <div class="row">
-        <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">وصف مختصر</label>
-        <textarea name="shortDesc" class="bg-slate-50 border-none rounded-2xl p-4 w-full h-20">${p.shortDesc || ''}</textarea>
-      </div>
-
-      <div class="grid grid-cols-3 gap-4">
-        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">وزن القطعة (كجم)</label><input name="weight" type="number" step="0.01" value="${p.weight}" class="bg-slate-50 border-none rounded-2xl p-4 w-full"></div>
-        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">سعر التكلفة</label><input name="cost" type="number" value="${p.cost}" class="bg-slate-50 border-none rounded-2xl p-4 w-full text-red-600 font-bold"></div>
-        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">سعر البيع</label><input name="price" type="number" value="${p.price}" class="bg-slate-50 border-none rounded-2xl p-4 w-full text-blue-600 font-bold"></div>
-      </div>
-
-      <div class="grid grid-cols-3 gap-4">
-        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">المخزون</label><input name="stock" type="number" value="${p.stock}" class="bg-slate-50 border-none rounded-2xl p-4 w-full font-black"></div>
-        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">التصنيف</label><select name="cat" class="bg-slate-50 border-none rounded-2xl p-4 w-full font-bold">${cats}</select></div>
-        <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">التوفر</label>
-            <select name="isAvailable" class="bg-slate-50 border-none rounded-2xl p-4 w-full font-bold">
-                <option value="true" ${p.isAvailable !== false ? 'selected' : ''}>متوفر</option>
-                <option value="false" ${p.isAvailable === false ? 'selected' : ''}>غير متوفر</option>
-            </select>
+    <div class="text-right" dir="rtl">
+      <h2 class="text-2xl font-black mb-6 text-slate-800 flex items-center gap-3">
+        <i data-lucide="${id ? 'edit' : 'plus-circle'}" class="text-blue-600"></i>
+        ${id ? 'تعديل بيانات المنتج' : 'إضافة منتج للمخزن'}
+      </h2>
+      <form id="prodForm" class="space-y-5">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="row">
+            <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase tracking-widest">اسم المنتج</label>
+            <input name="name" value="${p.name || ''}" required class="bg-slate-50 border-none rounded-2xl p-4 w-full font-bold focus:ring-2 focus:ring-blue-100">
+          </div>
+          <div class="row">
+            <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase tracking-widest">التصنيف</label>
+            <select name="cat" class="bg-slate-50 border-none rounded-2xl p-4 w-full font-black text-blue-600">${cats}</select>
+          </div>
         </div>
-      </div>
+        
+        <div class="row">
+          <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase tracking-widest">وصف مختصر (يظهر في المتجر)</label>
+          <input name="shortDesc" value="${p.shortDesc || ''}" placeholder="مثال: قطن 100% صناعة مصرية" class="bg-slate-50 border-none rounded-2xl p-4 w-full text-sm">
+        </div>
 
-      <div class="modal-actions mt-8">
-        <button type="button" class="px-6 py-3 bg-slate-100 rounded-2xl font-bold" onclick="closeModal()">إلغاء</button>
-        <button class="px-12 py-3 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-100">حفظ المنتج</button>
-      </div>
-    </form>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="row">
+            <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase tracking-widest text-emerald-600">الوزن بالجرام (g)</label>
+            <input name="weightGram" type="number" value="${p.weightGram || p.weight || 0}" class="bg-slate-50 border-none rounded-2xl p-4 w-full font-black">
+          </div>
+          <div class="row">
+            <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase tracking-widest">سعر البيع</label>
+            <input name="price" type="number" value="${p.price}" class="bg-blue-50 border-none rounded-2xl p-4 w-full font-black text-blue-600 shadow-inner">
+          </div>
+          <div class="row">
+            <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase tracking-widest">المخزون الحالي</label>
+            <input name="stock" type="number" value="${p.stock}" class="bg-slate-900 text-white border-none rounded-2xl p-4 w-full font-black shadow-lg">
+          </div>
+        </div>
+
+        <div class="modal-actions pt-4 border-t border-slate-100">
+          <button type="button" class="px-8 py-3 bg-slate-100 rounded-2xl font-bold text-slate-500" onclick="closeModal()">إلغاء</button>
+          <button class="px-12 py-3 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-100 hover:scale-105 transition-all">حفظ التغييرات</button>
+        </div>
+      </form>
+    </div>
   `);
+
+      if (typeof lucide !== 'undefined') lucide.createIcons();
 
       document.getElementById('prodForm').onsubmit = e => {
         e.preventDefault();
         const fd = Object.fromEntries(new FormData(e.target));
-        fd.price = Number(fd.price); fd.cost = Number(fd.cost); fd.stock = Number(fd.stock);
-        fd.weight = Number(fd.weight); fd.isAvailable = fd.isAvailable === 'true';
+        fd.price = Number(fd.price); fd.stock = Number(fd.stock); fd.weightGram = Number(fd.weightGram);
         if (id) Object.assign(p, fd); else State.data.products.push({ id: uid(), images: [], ...fd });
         Store.save(); closeModal(); render(); toast('تم التحديث بنجاح ✅');
       };

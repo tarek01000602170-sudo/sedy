@@ -3,8 +3,11 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Sedy ERP - Modern SaaS</title>
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Sedy ERP</title>
 
   <link rel="manifest" href="manifest.json">
 
@@ -18,10 +21,7 @@
   <!-- تعريف الأيقونة للتثبيت -->
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5609/5609352.png">
 
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Fonts -->
@@ -87,11 +87,24 @@
     }
 
     body {
-      font-family: 'Cairo', 'Inter', sans-serif;
-      background-color: #f8fafc;
-      /* Slate-50 */
-      color: #1e293b;
-      /* Slate-800 */
+      overscroll-behavior-y: contain;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .sidebar-drawer {
+      transition: transform 0.3s ease-in-out;
+      transform: translateX(100%);
+      /* للـ RTL */
+    }
+
+    .sidebar-drawer.open {
+      transform: translateX(0);
+    }
+
+    /* Bottom Navigation Bar للموبايل فقط */
+    .mobile-nav {
+      padding-bottom: env(safe-area-inset-bottom);
     }
 
     .soft-ui-card {
@@ -1540,8 +1553,8 @@
           <i data-lucide="shopping-bag" class="w-6 h-6"></i>
         </div>
         <div>
-          <h1 class="text-xl font-black text-slate-900 leading-none">SEEDY SEEDY</h1>
-          <span class="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">أكبر مول للأبصال والبذور</span>
+          <h1 class="text-xl font-black text-slate-900 leading-none">SEDY</h1>
+          <span class="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">Marketplace</span>
         </div>
       </div>
 
@@ -3650,9 +3663,7 @@ ${State.data.users.map(u => {
     /* PWA service worker registration (inline) */
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-          .then(reg => console.log('✅ تم تسجيل التطبيق بنجاح'))
-          .catch(err => console.log('❌ فشل تسجيل التطبيق', err));
+        navigator.serviceWorker.register('sw.js').then(reg => console.log('App Ready ✅'));
       });
     }
 

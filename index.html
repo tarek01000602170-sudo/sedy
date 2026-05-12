@@ -2144,55 +2144,45 @@
 
     // --- 4. نموذج إضافة/تعديل منتج المطور ---
     function openProductForm(id) {
-      const p = id ? State.data.products.find(x => x.id === id) : { isAvailable: true, weightGram: 0, cost: 0, price: 0, stock: 0, shortDesc: '' };
+      const p = id ? State.data.products.find(x => x.id === id) : { isAvailable: true, weightGram: 0, cost: 0, price: 0, stock: 0, shortDesc: '', fullDesc: '' };
       const cats = State.data.categories.map(c => `<option value="${c.id}" ${p.cat === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
 
       modal(`
     <div class="text-right" dir="rtl">
       <h2 class="text-2xl font-black mb-6 text-slate-800 flex items-center gap-3">
-        <i data-lucide="${id ? 'edit' : 'plus-circle'}" class="text-blue-600"></i>
-        ${id ? 'تعديل بيانات المنتج' : 'إضافة منتج للمخزن'}
+        <i data-lucide="package-plus" class="text-blue-600"></i> ${id ? 'تعديل المنتج' : 'إضافة منتج جديد'}
       </h2>
-      <form id="prodForm" class="space-y-5">
+      <form id="prodForm" class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
-          <div class="row">
-            <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase tracking-widest">اسم المنتج</label>
-            <input name="name" value="${p.name || ''}" required class="bg-slate-50 border-none rounded-2xl p-4 w-full font-bold focus:ring-2 focus:ring-blue-100">
-          </div>
-          <div class="row">
-            <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase tracking-widest">التصنيف</label>
-            <select name="cat" class="bg-slate-50 border-none rounded-2xl p-4 w-full font-black text-blue-600">${cats}</select>
-          </div>
+          <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">اسم المنتج</label><input name="name" value="${p.name || ''}" required class="bg-slate-50 border-none rounded-2xl p-4 w-full font-bold"></div>
+          <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">كود SKU</label><input name="sku" value="${p.sku || ''}" class="bg-slate-50 border-none rounded-2xl p-4 w-full font-mono text-xs"></div>
         </div>
         
+        <!-- الوصف المختصر (للاستيكر) -->
         <div class="row">
-          <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase tracking-widest">وصف مختصر (يظهر في المتجر)</label>
-          <input name="shortDesc" value="${p.shortDesc || ''}" placeholder="مثال: قطن 100% صناعة مصرية" class="bg-slate-50 border-none rounded-2xl p-4 w-full text-sm">
+          <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase text-blue-600">الوصف المختصر (يظهر في ملصق الباركود)</label>
+          <input name="shortDesc" value="${p.shortDesc || ''}" maxlength="50" placeholder="مثال: قطن طبيعي - مقاس XL" class="bg-slate-50 border-none rounded-2xl p-4 w-full font-bold text-sm">
+        </div>
+
+        <!-- الوصف العام -->
+        <div class="row">
+          <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">الوصف العام (تفاصيل المنتج للعميل)</label>
+          <textarea name="fullDesc" class="bg-slate-50 border-none rounded-2xl p-4 w-full h-24 text-sm" placeholder="اكتب مواصفات المنتج بالتفصيل هنا...">${p.fullDesc || ''}</textarea>
         </div>
 
         <div class="grid grid-cols-3 gap-4">
-          <div class="row">
-            <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase tracking-widest text-emerald-600">الوزن بالجرام (g)</label>
-            <input name="weightGram" type="number" value="${p.weightGram || p.weight || 0}" class="bg-slate-50 border-none rounded-2xl p-4 w-full font-black">
-          </div>
-          <div class="row">
-            <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase tracking-widest">سعر البيع</label>
-            <input name="price" type="number" value="${p.price}" class="bg-blue-50 border-none rounded-2xl p-4 w-full font-black text-blue-600 shadow-inner">
-          </div>
-          <div class="row">
-            <label class="text-[10px] font-black text-slate-400 mb-1 block uppercase tracking-widest">المخزون الحالي</label>
-            <input name="stock" type="number" value="${p.stock}" class="bg-slate-900 text-white border-none rounded-2xl p-4 w-full font-black shadow-lg">
-          </div>
+          <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">السعر</label><input name="price" type="number" value="${p.price}" class="bg-blue-50 text-blue-600 border-none rounded-2xl p-4 w-full font-black text-lg"></div>
+          <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">المخزون</label><input name="stock" type="number" value="${p.stock}" class="bg-slate-100 border-none rounded-2xl p-4 w-full font-black"></div>
+          <div class="row"><label class="text-[10px] font-black text-slate-400 mb-1 block uppercase">الوزن (جرام)</label><input name="weightGram" type="number" value="${p.weightGram || 0}" class="bg-slate-50 border-none rounded-2xl p-4 w-full font-bold"></div>
         </div>
 
-        <div class="modal-actions pt-4 border-t border-slate-100">
-          <button type="button" class="px-8 py-3 bg-slate-100 rounded-2xl font-bold text-slate-500" onclick="closeModal()">إلغاء</button>
-          <button class="px-12 py-3 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-100 hover:scale-105 transition-all">حفظ التغييرات</button>
+        <div class="modal-actions pt-4">
+          <button type="button" class="px-8 py-3 bg-slate-100 rounded-2xl font-bold" onclick="closeModal()">إلغاء</button>
+          <button class="px-12 py-3 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-100">حفظ المنتج</button>
         </div>
       </form>
     </div>
   `);
-
       if (typeof lucide !== 'undefined') lucide.createIcons();
 
       document.getElementById('prodForm').onsubmit = e => {
@@ -2200,7 +2190,7 @@
         const fd = Object.fromEntries(new FormData(e.target));
         fd.price = Number(fd.price); fd.stock = Number(fd.stock); fd.weightGram = Number(fd.weightGram);
         if (id) Object.assign(p, fd); else State.data.products.push({ id: uid(), images: [], ...fd });
-        Store.save(); closeModal(); render(); toast('تم التحديث بنجاح ✅');
+        Store.save(); closeModal(); render(); toast('تم الحفظ ✅');
       };
     }
 
@@ -2932,17 +2922,38 @@
     Barcode.after = () => { genBC(); genCustomerLabel(); };
     function genBC() {
       const id = document.getElementById('bcProd')?.value;
-      const p = State.data.products.find(x => x.id === id); if (!p) return;
+      const p = State.data.products.find(x => x.id === id);
+      if (!p) return;
+
       const w = +document.getElementById('bcW')?.value || 10;
       const h = +document.getElementById('bcH')?.value || 6;
-      const bars = Array.from({ length: 40 }, () => `<rect x="${Math.random() * 100}%" y="0" width="${1 + Math.random() * 3}" height="60" fill="#000"/>`).join('');
+
+      // توليد خطوط الباركود (وهمي للعرض)
+      const bars = Array.from({ length: 50 }, () => `<rect x="${Math.random() * 100}%" y="0" width="${1.5 + Math.random() * 2}" height="60" fill="#000"/>`).join('');
+
       const el = document.getElementById('bcLabel');
-      el.style.width = w + 'cm'; el.style.minHeight = h + 'cm'; el.style.padding = '10px';
-      el.innerHTML = `<div style="font-size:14px;font-weight:800">${p.name}</div>
-    <svg viewBox="0 0 200 60" style="width:80%;height:50px;margin:10px 0">${bars}</svg>
-    <div style="font-family:monospace;letter-spacing:2px;font-size:12px">${p.sku}</div>
-    <div style="font-size:18px;font-weight:900;margin-top:6px">${money(p.price)}</div>`;
+      el.style.width = '100%';
+
+      el.innerHTML = `
+    <div style="width:${w}cm; min-height:${h}cm; padding:15px; background:#fff; color:#000; border:1px solid #eee; text-align:center; display:flex; flex-direction:column; justify-content:center; font-family: sans-serif;">
+      <!-- اسم المنتج -->
+      <div style="font-size:16px; font-weight:900; margin-bottom:4px; line-height:1.2; text-transform:uppercase;">${p.name}</div>
+      
+      <!-- الوصف المختصر (الجديد) -->
+      <div style="font-size:11px; font-weight:bold; color:#444; margin-bottom:10px; border-top:1px solid #ddd; padding-top:4px;">
+        ${p.shortDesc || '---'}
+      </div>
+      
+      <!-- الباركود -->
+      <svg viewBox="0 0 200 60" style="width:90%; height:45px; margin:0 auto 6px;">${bars}</svg>
+      
+      <!-- كود المنتج SKU -->
+      <div style="font-family:monospace; font-size:10px; font-weight:bold; letter-spacing:3px;">${p.sku || '00000000'}</div>
+      
+      <!-- ملاحظة: تم حذف السعر كما طلبت -->
+    </div>`;
     }
+
     function genCustomerLabel() {
       const oid = document.getElementById('csOrder')?.value;
       if (!oid) {
@@ -4116,10 +4127,13 @@ ${State.data.users.map(u => {
             <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest italic border border-blue-100">${catName}</span>
         </div>
         <h2 class="text-3xl font-black text-slate-800 mb-4">${p.name || 'منتج بدون اسم'}</h2>
-        
-        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6">
-            <p class="text-slate-500 text-sm leading-relaxed font-bold">${p.shortDesc || 'لا يوجد وصف متاح لهذا المنتج حالياً.'}</p>
-        </div>
+
+      <div class="bg-slate-50 p-6 rounded-3xl border border-slate-100 mb-8 shadow-inner">
+        <label class="text-[10px] font-black text-blue-500 uppercase tracking-widest block mb-2">وصف وتفاصيل المنتج</label>
+        <p class="text-slate-600 text-sm leading-relaxed font-bold whitespace-pre-line">
+        ${p.fullDesc || p.shortDesc || 'لا توجد تفاصيل إضافية لهذا المنتج.'}
+        </p>
+      </div>
 
         <div class="grid grid-cols-2 gap-4 mb-8">
             <div class="bg-white border border-slate-100 p-4 rounded-2xl soft-shadow text-center">

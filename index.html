@@ -92,6 +92,120 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --sidebar-w: 280px;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: 'Cairo', sans-serif;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* هيكل التطبيق الأساسي */
+    .app-wrapper {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* القائمة الجانبية - وضع الكمبيوتر */
+    .sidebar {
+      width: var(--sidebar-w);
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      right: 0;
+      /* ثابتة لليمين */
+      background: #ffffff;
+      border-left: 1px solid #e2e8f0;
+      z-index: 1000;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* منطقة المحتوى - وضع الكمبيوتر */
+    .main-content {
+      flex: 1;
+      margin-right: var(--sidebar-w);
+      /* حجز مساحة القائمة */
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    /* --- تعديلات الموبايل والتابلت (الشاشات الصغيرة) --- */
+    @media (max-width: 1024px) {
+      .main-content {
+        margin-right: 0 !important;
+        /* إلغاء حجز المساحة في الموبايل */
+      }
+
+      .sidebar {
+        transform: translateX(100%);
+        /* إخفاء القائمة تماماً خارج الشاشة */
+        position: fixed;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+        /* إظهارها عند الطلب */
+        box-shadow: -15px 0 50px rgba(0, 0, 0, 0.15);
+      }
+
+      /* الغطاء الشفاف خلف القائمة */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        z-index: 950;
+        display: none;
+        animation: fade .2s ease;
+      }
+
+      .overlay.active {
+        display: block;
+      }
+    }
+
+    /* تنسيق الكروت في لوحة التحكم (للموبايل) */
+    .kpi-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(1, 1fr);
+      /* عمود واحد للموبايل */
+    }
+
+    @media (min-width: 768px) {
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1280px) {
+      .kpi-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    /* أنيميشن بسيط */
+    @keyframes fade {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
     /* دعم المساحات الآمنة (النوتش في الآيفون) */
     .safe-p {
       padding-top: env(safe-area-inset-top);
@@ -1688,43 +1802,64 @@
        9. APP SHELL
     =========================================================== */
     function AppShell() {
-      const role = State.user.role;
-      const navHTML = NAV.map(g => {
-        // الفلترة تعتمد على دالة Auth.can التي أصلحناها فوق
-        const items = g.items.filter(i => Auth.can(i.id));
-
-        if (!items.length) return '';
-        return `<div class="group">${g.group}</div>` + items.map(i =>
-          `<a href="#" data-page="${i.id}" class="${State.page === i.id ? 'active' : ''}">
-        <span class="ico">${i.ico}</span><span>${i.label}</span>
-      </a>`
-        ).join('');
-      }).join('');
-      const unread = State.data.notifications.filter(n => !n.read).length;
       return `
-  <div class="app">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand"><div class="logo">E</div><div><div class="name">ERP System</div><div class="muted" style="font-size:11px">${ROLES[role].label}</div></div></div>
-      <nav class="nav">${navHTML}</nav>
-      <div class="user">
-        <div class="av">${State.user.name[0]}</div>
-        <div style="flex:1"><div style="font-weight:700;font-size:13px">${State.user.name}</div><div class="muted" style="font-size:11px">${State.user.email}</div></div>
-        <button class="icon-btn" onclick="if(confirm('تأكيد تسجيل الخروج؟')) Auth.logout()" title="خروج">↩</button>
+  <div class="app-wrapper" dir="rtl">
+    <!-- الغطاء الشفاف للموبايل -->
+    <div id="sidebarOverlay" onclick="toggleSidebar(false)" class="overlay"></div>
+
+    <!-- Sidebar (القائمة الجانبية) -->
+    <aside id="mainSidebar" class="sidebar">
+      <div class="p-6">
+        <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100">
+          <div class="flex items-center gap-3">
+             <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg"><i data-lucide="layers"></i></div>
+             <span class="text-xl font-black text-slate-800">SEDY ERP</span>
+          </div>
+          <!-- زر إغلاق يظهر في الموبايل فقط -->
+          <button onclick="toggleSidebar(false)" class="lg:hidden p-2 text-slate-400 hover:bg-white rounded-xl"><i data-lucide="x"></i></button>
+        </div>
+      </div>
+      
+      <nav class="flex-1 overflow-y-auto custom-scroll">
+        ${renderSidebarLinks()}
+      </nav>
+
+      <div class="p-4 border-t border-slate-50">
+        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+          <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black">${State.user.name[0]}</div>
+          <div class="flex-1 overflow-hidden">
+            <div class="text-[11px] font-black text-slate-800 truncate">${State.user.name}</div>
+            <div class="text-[9px] text-slate-400 font-bold uppercase">${ROLES[State.user.role].label}</div>
+          </div>
+          <button onclick="Auth.logout()" class="text-slate-400 hover:text-red-500"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+        </div>
       </div>
     </aside>
-    <main class="main">
-      <header class="topbar">
-        <button class="icon-btn menu-toggle" id="menuToggle">☰</button>
-        <h1 id="pageTitle">${pageTitle()}</h1>
-        <div class="spacer"></div>
-        <button class="icon-btn" onclick="toggleLang()" title="اللغة">${State.lang === 'ar' ? 'EN' : 'ع'}</button>
-        <button class="icon-btn" onclick="toggleTheme()" title="المظهر">${State.theme === 'dark' ? '☀️' : '🌙'}</button>
-        <button class="icon-btn" onclick="showNotifs()" title="الإشعارات">🔔${unread ? `<span class="badge">${unread}</span>` : ''}</button>
+
+    <!-- منطقة المحتوى الرئيسية -->
+    <div class="main-content">
+      <header class="h-16 lg:h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 lg:px-8 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+          <!-- زر فتح المنيو للموبايل فقط -->
+          <button onclick="toggleSidebar(true)" class="lg:hidden w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 active:scale-90 transition-all">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+          </button>
+          <h2 class="text-sm lg:text-xl font-black text-slate-800 truncate">${pageTitle()}</h2>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button onclick="State.page='cart';render()" class="relative w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
+                <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                ${cart.length > 0 ? `<span class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-5 h-5 rounded-full border-2 border-white flex items-center justify-center font-black">${cart.length}</span>` : ''}
+            </button>
+            <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500"><i data-lucide="${State.theme === 'dark' ? 'sun' : 'moon'}" class="w-5 h-5"></i></button>
+        </div>
       </header>
-      <div class="content" id="page"></div>
-    </main>
-  </div>
-  <button class="fab" onclick="quickAction()">+</button>`;
+      
+      <!-- منطقة الصفحات -->
+      <div id="page" class="p-4 lg:p-8"></div>
+    </div>
+  </div>`;
     }
     function pageTitle() {
       for (const g of NAV) for (const i of g.items) if (i.id === State.page) return i.label;
@@ -1789,8 +1924,8 @@
       const profit = totalSales - State.data.expenses.reduce((s, e) => s + e.amount, 0);
       const lowStock = State.data.products.filter(p => p.stock <= p.minStock).length;
       return `
-  <div class="grid cols-4 mb">
-    ${kpi('💰', 'إجمالي المبيعات', money(totalSales), '+12%', 'up', 'linear-gradient(135deg,#10b981,#059669)')}
+  <div class="kpi-grid mb-8">
+    ${kpi('💰', 'إجمالي المبيعات', money(totalSales), '+12%', 'up', 'linear-gradient(135deg,#2563eb,#1d4ed8)')}
     ${kpi('📦', 'الطلبات اليوم', fmt(today.length), '+8%', 'up', 'linear-gradient(135deg,#0ea5e9,#0284c7)')}
     ${kpi('👥', 'العملاء', fmt(State.data.customers.length), '+5%', 'up', 'linear-gradient(135deg,#6366f1,#4f46e5)')}
     ${kpi('📈', 'الأرباح الصافية', money(profit), profit > 0 ? '+15%' : '-3%', profit > 0 ? 'up' : 'down', 'linear-gradient(135deg,#f59e0b,#d97706)')}

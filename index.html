@@ -1881,52 +1881,110 @@
     function Products() {
       return `
   <div class="bg-white rounded-[2rem] p-6 border border-slate-100 soft-shadow">
+    <!-- العنوان والتحكم الجماعي -->
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
       <div>
         <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
-          <i data-lucide="package" class="text-blue-600"></i> إدارة المخزون الشاملة
+          <i data-lucide="package" class="text-blue-600"></i> إدارة المخزون
         </h3>
         <div id="bulkActions" class="hidden mt-2 animate-pop">
             <button onclick="deleteSelectedProducts()" class="px-4 py-2 bg-red-50 text-red-600 rounded-xl font-black text-xs border border-red-100">حذف المحدد</button>
         </div>
       </div>
+
       <div class="flex flex-wrap gap-2">
-        <!-- زر التصدير الجديد -->
-  <button onclick="exportExcelProducts()" class="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs cursor-pointer border border-blue-100 shadow-sm transition-all hover:bg-blue-100">
-    <i data-lucide="download" class="w-4 h-4"></i> تصدير Excel
-  </button>
-        <label class="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-bold text-xs cursor-pointer border border-emerald-100 shadow-sm">
-          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> استيراد Excel
+        <button onclick="exportExcelProducts()" class="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs border border-blue-100 shadow-sm transition-all hover:bg-blue-100">
+          <i data-lucide="download" class="w-4 h-4"></i> تصدير
+        </button>
+        <label class="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-bold text-xs cursor-pointer border border-emerald-100 shadow-sm transition-all hover:bg-emerald-100">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> استيراد
           <input type="file" accept=".xlsx, .xls" style="display:none" onchange="importExcelProducts(this)">
         </label>
-        <button onclick="openProductForm()" class="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-xl font-black text-xs shadow-lg shadow-blue-200">
-          <i data-lucide="plus" class="w-4 h-4"></i> منتج جديد
+        <button onclick="openProductForm()" class="bg-blue-600 text-white px-5 py-2 rounded-xl font-black text-xs shadow-lg shadow-blue-200">
+          + منتج جديد
         </button>
       </div>
     </div>
 
+    <!-- شريط البحث والتسلسل (الجديد) -->
+    <div class="flex flex-col md:flex-row gap-4 mb-6 bg-slate-50 p-4 rounded-3xl border border-slate-100">
+      <div class="relative flex-1">
+        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
+        <input id="prodSearch" placeholder="بحث بالاسم أو SKU..." oninput="filterAndSortProducts()" 
+               class="w-full bg-white border-none rounded-2xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-100">
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <label class="text-[10px] font-black text-slate-400 uppercase whitespace-nowrap">ترتيب حسب:</label>
+        <select id="prodSort" onchange="filterAndSortProducts()" 
+                class="bg-white border-none rounded-2xl px-4 py-3 text-xs font-bold text-blue-600 focus:ring-2 focus:ring-blue-100 shadow-sm">
+          <option value="name_asc">🔤 أبجدياً (أ-ي)</option>
+          <option value="name_desc">🔤 أبجدياً (ي-أ)</option>
+          <option value="price_high">💰 الأعلى سعراً</option>
+          <option value="price_low">💰 الأقل سعراً</option>
+          <option value="stock_high">📦 الأكثر مخزوناً</option>
+          <option value="stock_low">⚠️ الأقل مخزوناً</option>
+          <option value="available">✅ المتوفر أولاً</option>
+          <option value="category">📂 حسب التصنيف</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- الجدول -->
     <div class="table-wrap border-none overflow-x-auto">
       <table class="w-full text-right whitespace-nowrap">
-        <thead>
-          <tr class="text-slate-400 text-[10px] font-black uppercase border-b border-slate-100">
-            <th class="pb-4 w-10 text-center"><input type="checkbox" onchange="toggleAllProducts(this)" class="accent-blue-600"></th>
-            <th class="pb-4">المنتج</th>
-            <th class="pb-4">SKU</th>
-            <th class="pb-4">التصنيف</th>
-            <th class="pb-4">التكلفة</th>
-            <th class="pb-4">السعر</th>
-            <th class="pb-4">الربح</th>
-            <th class="pb-4 text-center">الوزن</th>
-            <th class="pb-4 text-center">متوفر</th>
-            <th class="pb-4 text-center">المخزون</th>
-            <th class="pb-4 text-left">إجراءات</th>
-          </tr>
-        </thead>
+        /* داخل دالة Products() في جزء الـ thead */
+<thead>
+  <tr class="text-slate-400 text-[10px] font-black uppercase border-b border-slate-100">
+    <th class="pb-4 w-10 text-center"><input type="checkbox" onchange="toggleAllProducts(this)" class="accent-blue-600"></th>
+    <th class="pb-4">المنتج</th>
+    <th class="pb-4 text-start">الوصف المختصر</th> <!-- العمود الجديد -->
+    <th class="pb-4 text-center">التصنيف</th>
+    <th class="pb-4">التكلفة</th>
+    <th class="pb-4">السعر</th>
+    <th class="pb-4">الربح</th>
+    <th class="pb-4 text-center">الوزن</th>
+    <th class="pb-4 text-center">الحالة</th>
+    <th class="pb-4 text-center">المخزون</th>
+    <th class="pb-4 text-left">إجراءات</th>
+  </tr>
+</thead>
         <tbody id="prodBody">${prodRows(State.data.products)}</tbody>
       </table>
     </div>
   </div>`;
     }
+
+    window.filterAndSortProducts = () => {
+      const q = document.getElementById('prodSearch')?.value.toLowerCase() || '';
+      const sortBy = document.getElementById('prodSort')?.value || 'name_asc';
+
+      // 1. الفلترة حسب البحث
+      let list = State.data.products.filter(p =>
+        (p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q))
+      );
+
+      // 2. التسلسل (Sorting Logic)
+      list.sort((a, b) => {
+        switch (sortBy) {
+          case 'name_asc': return a.name.localeCompare(b.name, 'ar');
+          case 'name_desc': return b.name.localeCompare(a.name, 'ar');
+          case 'price_high': return (b.price || 0) - (a.price || 0);
+          case 'price_low': return (a.price || 0) - (b.price || 0);
+          case 'stock_high': return (b.stock || 0) - (a.stock || 0);
+          case 'stock_low': return (a.stock || 0) - (b.stock || 0);
+          case 'available': return (b.isAvailable === false ? 0 : 1) - (a.isAvailable === false ? 0 : 1);
+          case 'category': return (a.cat || '').localeCompare(b.cat || '', 'ar');
+          default: return 0;
+        }
+      });
+
+      // 3. تحديث الجدول
+      document.getElementById('prodBody').innerHTML = prodRows(list);
+
+      // إعادة تفعيل الأيقونات إذا لزم الأمر
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    };
 
     window.exportExcelProducts = () => {
       // 1. تحضير البيانات بالتنسيق الذي يريده المستخدم
@@ -1974,6 +2032,8 @@
     };
 
     // --- 2. عرض صفوف المنتجات ---
+    /* استبدل دالة prodRows بهذا الكود */
+
     function prodRows(list) {
       return list.map(p => {
         const catName = State.data.categories.find(c => c.id === p.cat)?.name || 'عام';
@@ -1982,44 +2042,56 @@
         const profit = price - cost;
 
         return `
-    <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-all group">
-      <td class="py-4 text-center"><input type="checkbox" name="prodCheck" value="${p.id}" onchange="updateBulkUI()" class="accent-blue-600"></td>
+    <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-all group text-right">
+      <td class="py-4 text-center">
+        <input type="checkbox" name="prodCheck" value="${p.id}" onchange="updateBulkUI()" class="accent-blue-600">
+      </td>
       
-      <td class="py-4">
+      <td class="py-4 min-w-[200px]">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-lg border border-slate-100 shadow-sm">${p.img || '📦'}</div>
           <div>
             <div class="font-black text-slate-800 text-sm">${p.name || 'بدون اسم'}</div>
-            <div class="text-[9px] text-slate-400 font-bold max-w-[150px] truncate">${p.shortDesc || ''}</div>
+            <div class="text-[10px] text-blue-500 font-bold">${p.sku || '---'}</div>
           </div>
         </div>
       </td>
 
-      <td class="py-4 font-mono text-[10px] text-slate-400">${p.sku || '---'}</td>
+      <!-- خانة الوصف المختصر (الجديدة في الجدول) -->
+      <td class="py-4">
+        <div class="max-w-[180px] bg-slate-50 p-2 rounded-xl border border-slate-100">
+            <p class="text-[11px] text-slate-500 font-bold leading-tight line-clamp-2 italic" title="${p.shortDesc || ''}">
+                ${p.shortDesc || '<span class="text-slate-300">لا يوجد وصف..</span>'}
+            </p>
+        </div>
+      </td>
       
-      <td class="py-4"><span class="bg-blue-50 text-blue-600 px-2 py-1 rounded-lg text-[10px] font-black italic border border-blue-100">${catName}</span></td>
+      <td class="py-4 text-center"><span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black italic border border-blue-100">${catName}</span></td>
       
       <td class="py-4 text-xs font-bold text-slate-500">${money(cost)}</td>
-      
       <td class="py-4 font-black text-blue-600 text-sm">${money(price)}</td>
-      
       <td class="py-4 font-black text-emerald-600 text-sm">${money(profit)}</td>
       
       <td class="py-4 text-center text-xs font-bold text-slate-600">${p.weightGram || 0} جرام</td>
       
       <td class="py-4 text-center">
-        ${p.isAvailable !== false ?
-            '<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg text-[9px] font-black">نعم</span>' :
-            '<span class="bg-red-50 text-red-600 px-2 py-1 rounded-lg text-[9px] font-black">لا</span>'}
+        ${p.isAvailable !== false && p.stock > 0 ?
+            '<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-lg text-[9px] font-black italic">متوفر</span>' :
+            '<span class="bg-red-50 text-red-600 px-2 py-1 rounded-lg text-[9px] font-black italic">نفد/مخفي</span>'}
       </td>
       
       <td class="py-4 text-center font-black text-slate-800">${p.stock || 0}</td>
       
       <td class="py-4 text-left">
-        <button onclick="openProductForm('${p.id}')" class="p-2 text-slate-400 hover:text-blue-600"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+        <button onclick="openProductForm('${p.id}')" class="p-2 text-slate-400 hover:text-blue-600 transition-all rounded-xl hover:bg-white shadow-sm border border-transparent hover:border-slate-100">
+            <i data-lucide="edit-3" class="w-4 h-4"></i>
+        </button>
       </td>
     </tr>`;
-      }).join('') || '<tr><td colspan="11" class="py-20 text-center text-slate-300">استورد ملف إكسيل للبدء</td></tr>';
+      }).join('') || '<tr><td colspan="11" class="py-20 text-center text-slate-300 italic">لا توجد منتجات مطابقة</td></tr>';
+
+      /* أضف هذا السطر في نهاية دالة prodRows لضمان عمل الأيقونات عند الترتيب */
+      if (typeof lucide !== 'undefined') setTimeout(() => lucide.createIcons(), 10);
     }
 
     // 1. تحديد الكل
@@ -2158,47 +2230,52 @@
       </h2>
       
       <form id="prodForm" class="space-y-5">
-        <!-- الاسم و SKU -->
+        <!-- الصف الأول: الاسم و SKU -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="space-y-1">
-            <label class="text-[10px] font-black text-slate-400 uppercase mr-2">اسم المنتج</label>
+            <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">اسم المنتج</label>
             <input name="name" value="${p.name || ''}" required class="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold focus:ring-2 focus:ring-blue-100">
           </div>
           <div class="space-y-1">
-            <label class="text-[10px] font-black text-slate-400 uppercase mr-2">SKU (كود الصنف)</label>
+            <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">SKU (كود الصنف)</label>
             <input name="sku" value="${p.sku || ''}" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-mono text-center">
           </div>
         </div>
 
-        <!-- التصنيف والإيموجي والوزن -->
+        <!-- جديد: الوصف المختصر (للملصقات والباركود) -->
+        <div class="space-y-1">
+          <label class="text-[10px] font-black text-blue-500 uppercase mr-2 italic">الوصف المختصر (يظهر في ملصق الباركود)</label>
+          <input name="shortDesc" value="${p.shortDesc || ''}" placeholder="مثال: قطن 100% - مقاس L - لون أزرق" class="w-full bg-blue-50/30 border border-blue-100 rounded-2xl p-4 font-bold text-sm focus:ring-2 focus:ring-blue-200">
+        </div>
+
+        <!-- الصف الثاني: التصنيف والإيموجي والوزن -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="space-y-1">
-            <label class="text-[10px] font-black text-slate-400 uppercase mr-2">التصنيف</label>
+            <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">التصنيف</label>
             <select name="cat" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold text-slate-700">${cats}</select>
           </div>
           <div class="space-y-1">
-            <label class="text-[10px] font-black text-slate-400 uppercase mr-2">إيموجي الاحتياطي</label>
+            <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">إيموجي الاحتياطي</label>
             <input name="img" value="${p.img || '📦'}" class="w-full bg-slate-50 border-none rounded-2xl p-4 text-center text-2xl">
           </div>
           <div class="space-y-1">
-            <label class="text-[10px] font-black text-slate-400 uppercase mr-2 text-emerald-600">الوزن (بالجرام)</label>
+            <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic text-emerald-600">الوزن (بالجرام)</label>
             <input name="weightGram" type="number" value="${p.weightGram || 0}" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-black">
           </div>
         </div>
 
         <!-- التكلفة والسعر والربح -->
-        <div class="bg-blue-50/50 p-4 rounded-[2rem] border border-blue-100">
+        <div class="bg-blue-50/50 p-4 rounded-[2rem] border border-blue-100 shadow-inner">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div class="space-y-1">
-                <label class="text-[10px] font-black text-slate-400 uppercase mr-2">سعر التكلفة</label>
-                <input name="cost" id="f_cost" type="number" value="${p.cost || 0}" oninput="calcLiveProfit()" class="w-full bg-white border-none rounded-2xl p-4 font-black text-red-500">
+                <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">سعر التكلفة</label>
+                <input name="cost" id="f_cost" type="number" value="${p.cost || 0}" oninput="calcLiveProfit()" class="w-full bg-white border-none rounded-2xl p-4 font-black text-red-500 shadow-sm">
               </div>
               <div class="space-y-1">
-                <label class="text-[10px] font-black text-slate-400 uppercase mr-2">سعر البيع</label>
-                <input name="price" id="f_price" type="number" value="${p.price || 0}" oninput="calcLiveProfit()" class="w-full bg-white border-none rounded-2xl p-4 font-black text-blue-600">
+                <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">سعر البيع</label>
+                <input name="price" id="f_price" type="number" value="${p.price || 0}" oninput="calcLiveProfit()" class="w-full bg-white border-none rounded-2xl p-4 font-black text-blue-600 shadow-sm">
               </div>
-              <!-- خانة الربح التلقائية -->
-              <div class="bg-white rounded-2xl p-3 text-center border border-blue-100">
+              <div class="bg-white rounded-2xl p-3 text-center border border-blue-100 shadow-sm">
                 <div class="text-[9px] font-black text-slate-400 uppercase">صافي الربح المتوقع</div>
                 <div id="liveProfit" class="text-xl font-black text-emerald-600">${money((p.price || 0) - (p.cost || 0))}</div>
               </div>
@@ -2208,15 +2285,15 @@
         <!-- المخزون والتوفر -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="space-y-1">
-            <label class="text-[10px] font-black text-slate-400 uppercase mr-2">المخزون الحالي</label>
+            <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">المخزون الحالي</label>
             <input name="stock" type="number" value="${p.stock || 0}" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-black">
           </div>
           <div class="space-y-1">
-            <label class="text-[10px] font-black text-slate-400 uppercase mr-2">حد التنبيه</label>
+            <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">حد التنبيه</label>
             <input name="minStock" type="number" value="${p.minStock || 10}" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-black text-orange-500">
           </div>
           <div class="space-y-1">
-            <label class="text-[10px] font-black text-slate-400 uppercase mr-2">حالة التوفر</label>
+            <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">حالة التوفر</label>
             <select name="isAvailable" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-black text-blue-600">
                 <option value="true" ${p.isAvailable !== false ? 'selected' : ''}>✅ متوفر للبيع</option>
                 <option value="false" ${p.isAvailable === false ? 'selected' : ''}>❌ غير متوفر</option>
@@ -2224,25 +2301,31 @@
           </div>
         </div>
 
+        <!-- جديد: الوصف العام (للمتجر) -->
+        <div class="space-y-1">
+          <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">الوصف العام (تفاصيل المنتج للعملاء في المتجر)</label>
+          <textarea name="fullDesc" rows="3" class="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-blue-100" placeholder="اكتب هنا كل ما يخص المنتج من مميزات وعيوب وطريقة استخدام...">${p.fullDesc || ''}</textarea>
+        </div>
+
         <!-- قسم الصور -->
         <div class="space-y-3">
-          <label class="text-[10px] font-black text-slate-400 uppercase mr-2 flex items-center gap-2">
-            <i data-lucide="image" class="w-3 h-3"></i> معرض الصور
+          <label class="text-[10px] font-black text-slate-400 uppercase mr-2 flex items-center gap-2 italic">
+            <i data-lucide="image" class="w-3 h-3 text-blue-600"></i> معرض صور المنتج
           </label>
-          <div id="modalImgList" class="flex flex-wrap gap-3"></div>
+          <div id="modalImgList" class="flex flex-wrap gap-3 mb-2"></div>
           <div class="flex gap-2">
-            <input id="modalImgUrl" placeholder="رابط صورة..." class="flex-1 bg-slate-50 border-none rounded-xl p-3 text-xs">
-            <button type="button" onclick="addImgFromModalUrl()" class="bg-slate-100 px-4 rounded-xl font-bold text-xs">+ إضافة</button>
+            <input id="modalImgUrl" placeholder="رابط صورة مباشر..." class="flex-1 bg-slate-50 border-none rounded-xl p-3 text-xs">
+            <button type="button" onclick="addImgFromModalUrl()" class="bg-blue-600 text-white px-4 rounded-xl font-bold text-xs shadow-md shadow-blue-100">+ إضافة</button>
           </div>
-          <label class="w-full flex items-center justify-center gap-2 p-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100 transition-all text-[10px] font-black uppercase text-slate-500">
-             <i data-lucide="upload-cloud"></i> رفع من الجهاز
+          <label class="w-full flex items-center justify-center gap-2 p-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-100 transition-all text-[10px] font-black uppercase text-slate-400">
+             <i data-lucide="upload-cloud"></i> اضغط هنا لرفع صور من جهازك (JPG, PNG)
              <input type="file" accept="image/*" multiple style="display:none" onchange="addImgFromModalFile(this)">
           </label>
         </div>
 
-        <div class="modal-actions !justify-between pt-6 border-t border-slate-50">
-          <button type="button" onclick="closeModal()" class="px-8 py-3 bg-slate-100 text-slate-500 rounded-2xl font-black text-xs">إلغاء</button>
-          <button class="px-12 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs shadow-xl shadow-blue-200 hover:scale-105 transition-all">حفظ المنتج</button>
+        <div class="modal-actions !justify-between pt-6 border-t border-slate-100">
+          <button type="button" onclick="closeModal()" class="px-8 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-xs hover:bg-slate-200 transition-all">إلغاء</button>
+          <button class="px-12 py-4 bg-blue-600 text-white rounded-2xl font-black text-xs shadow-xl shadow-blue-200 hover:scale-105 transition-all">حفظ البيانات والتغييرات</button>
         </div>
       </form>
     </div>
@@ -2251,13 +2334,14 @@
       if (typeof lucide !== 'undefined') lucide.createIcons();
       refreshModalImgList();
 
-      // دالة حساب الربح اللحظي داخل المودال
+      // وظيفة حساب الربح اللحظي
       window.calcLiveProfit = () => {
         const cost = parseFloat(document.getElementById('f_cost').value) || 0;
         const price = parseFloat(document.getElementById('f_price').value) || 0;
         document.getElementById('liveProfit').textContent = money(price - cost);
       };
 
+      // وظيفة الحفظ
       document.getElementById('prodForm').onsubmit = e => {
         e.preventDefault();
         const fd = Object.fromEntries(new FormData(e.target));
@@ -2272,8 +2356,11 @@
           images: window._prodImgs,
           velocity: p.velocity || 1
         };
-        if (id) Object.assign(p, finalData); else State.data.products.push({ id: uid(), ...finalData });
-        Store.save(); closeModal(); render(); toast('تم التحديث بنجاح ✅', 'success');
+
+        if (id) Object.assign(p, finalData);
+        else State.data.products.push({ id: uid(), ...finalData });
+
+        Store.save(); closeModal(); render(); toast('تم تحديث بيانات المنتج بنجاح ✅', 'success');
       };
     }
 
@@ -3962,7 +4049,19 @@ ${State.data.users.map(u => {
       }
 
       // 2. فلترة المنتجات
-      const list = products.filter(p => (p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q)) && (window.shopCategory === 'all' || p.cat === window.shopCategory));
+      /* داخل دالة renderShop */
+
+      // تحديث سطر الفلترة (list) ليكون هكذا:
+      const list = products.filter(p => {
+        const name = p.name ? p.name.toLowerCase() : '';
+        const matchesSearch = name.includes(q);
+        const matchesCat = (window.shopCategory === 'all' || p.cat === window.shopCategory);
+
+        // الشرط الجديد: يجب أن يكون المنتج متوفراً (isAvailable) والمخزون أكبر من صفر
+        const isVisible = (p.isAvailable !== false) && (p.stock > 0);
+
+        return matchesSearch && matchesCat && isVisible;
+      });
 
       // 3. رسم البطاقات الاحترافية
       grid.innerHTML = list.map(p => {

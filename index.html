@@ -141,38 +141,82 @@
     }
 
     /* --- تعديلات الموبايل والتابلت (الشاشات الصغيرة) --- */
+    /* تأثير انزلاق القائمة من اليمين */
     @media (max-width: 1024px) {
-      .main-content {
-        margin-right: 0 !important;
-        /* إلغاء حجز المساحة في الموبايل */
-      }
-
       .sidebar {
         transform: translateX(100%);
-        /* إخفاء القائمة تماماً خارج الشاشة */
-        position: fixed;
+        /* البداية خارج الشاشة يميناً */
+        transition: transform 0.3s ease-in-out !important;
       }
 
       .sidebar.open {
-        transform: translateX(0);
-        /* إظهارها عند الطلب */
-        box-shadow: -15px 0 50px rgba(0, 0, 0, 0.15);
+        transform: translateX(0) !important;
+        /* الدخول للشاشة */
       }
 
-      /* الغطاء الشفاف خلف القائمة */
+      /* الغطاء الشفاف */
       .overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(15, 23, 42, 0.4);
-        backdrop-filter: blur(4px);
-        z-index: 950;
-        display: none;
-        animation: fade .2s ease;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
       }
 
       .overlay.active {
-        display: block;
+        opacity: 1;
+        pointer-events: auto;
       }
+    }
+
+    /* تنسيق روابط القائمة الجانبية المطور */
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      /* مسافة بين الأيقونة والنص */
+      padding: 12px 16px;
+      margin: 4px 12px;
+      border-radius: 16px;
+      color: #64748b;
+      /* لون رمادي هادئ Slate-500 */
+      font-weight: 700;
+      font-size: 13.5px;
+      transition: all 0.2s ease;
+      text-decoration: none !important;
+      /* إلغاء الخط الأزرق نهائياً */
+    }
+
+    /* حالة التحويم (Hover) */
+    .nav-link:hover {
+      background: #f1f5f9;
+      color: #2563eb;
+      /* Blue-600 */
+      transform: translateX(-4px);
+      /* حركة بسيطة لليمين عند التأشير */
+    }
+
+    /* الحالة النشطة (Active) */
+    .nav-link.active {
+      background: #2563eb;
+      color: #ffffff !important;
+      box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.25);
+    }
+
+    /* عناوين المجموعات (مثل: الرئيسية، المبيعات) */
+    .nav-group-title {
+      padding: 28px 24px 8px;
+      font-size: 10px;
+      font-weight: 900;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    /* ضبط حجم الأيقونات */
+    .nav-link i,
+    .nav-link svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
     }
 
     /* تنسيق الكروت في لوحة التحكم (للموبايل) */
@@ -1352,30 +1396,32 @@
 
       // تحميل البيانات
       async load() {
-        // 1. تحميل أولي سريع من الذاكرة المحلية (عشان الموقع ميفتحش فاضي)
+        // 1. تحميل أولي من الذاكرة المحلية لسرعة الاستجابة
         try {
           const localData = JSON.parse(localStorage.getItem(this.KEY));
-          if (localData) State.data = localData;
-        } catch (e) { console.error("Local load error"); }
+          if (localData) {
+            State.data = localData;
+            render(); // ارسم الصفحة فوراً بالداتا القديمة حتى تصل الجديدة
+          }
+        } catch (e) { console.error("Local load fail"); }
 
         // 2. المزامنة اللحظية مع Firebase
         if (USE_FIREBASE && typeof db !== 'undefined') {
           db.collection('settings').doc('main_data').onSnapshot((doc) => {
             if (doc.exists) {
-              console.log("🔔 تم استقبال تحديث من السحابة...");
               State.data = doc.data();
+              console.log("✅ وصلت البيانات الجديدة من السحابة");
 
-              // أهم سطر: إعادة رسم الصفحة الحالية فوراً بالبيانات الجديدة
-              // نستخدم setTimeout بسيط لضمان أن المتصفح جاهز للرسم
-              setTimeout(() => {
-                if (State.page === 'shop') {
-                  renderShop(); // تحديث المتجر فقط إذا كان المستخدم فيه
-                } else if (State.page === 'pos') {
-                  renderPosList(); // تحديث الـ POS فقط إذا كان المندوب فيه
-                } else {
-                  render(); // إعادة رسم النظام بالكامل لباقي الصفحات
-                }
-              }, 0);
+              // رسم التطبيق بالكامل فور وصول البيانات
+              render();
+
+              // إذا كان المستخدم في المتجر أو POS، نتأكد من رسم القائمة بداخلهم
+              if (State.page === 'shop') renderShop();
+              if (State.page === 'pos') renderPosList();
+            } else {
+              // إذا كان الفيرباس فارغاً تماماً (أول مرة)
+              seedDemo();
+              this.save();
             }
           });
         }
@@ -1632,23 +1678,24 @@
     }
 
     function renderSidebarLinks() {
-      const role = State.user.role;
       return NAV.map(g => {
+        // فلترة العناصر المسموح بها للمستخدم
         const items = g.items.filter(i => Auth.can(i.id));
         if (!items.length) return '';
 
         const links = items.map(i => {
           const isActive = State.page === i.id;
+          // توليد الرابط
           return `
-        <a href="#" onclick="event.preventDefault(); State.page='${i.id}'; render();" 
-           class="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all group ${isActive ? 'bg-primary text-white shadow-lg shadow-blue-100' : 'text-slate-500 hover:bg-slate-50 hover:text-primary'}">
-          <i data-lucide="${getIconName(i.ico)}" class="w-5 h-5 ${isActive ? 'text-white' : 'group-hover:text-primary'}"></i>
-          <span class="font-bold text-sm">${i.label}</span>
+        <a href="#" onclick="event.preventDefault(); State.page='${i.id}'; render(); toggleSidebar(false);" 
+           class="nav-link ${isActive ? 'active shadow-lg' : ''}">
+          <i data-lucide="${getIconName(i.ico)}"></i>
+          <span>${i.label}</span>
         </a>`;
         }).join('');
 
         return `
-      <div class="pt-6 pb-2 px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px]">${g.group}</div>
+      <div class="nav-group-title">${g.group}</div>
       ${links}
     `;
       }).join('');
@@ -1657,15 +1704,33 @@
     // دالة مساعدة لتحويل الإيموجي لاسم أيقونة
     function getIconName(ico) {
       const map = {
-        '📊': 'bar-chart-3', '🛍️': 'shopping-bag', '🛒': 'shopping-cart', '📦': 'package',
-        '⚡': 'zap', '📋': 'list-checks', '👥': 'users', '🎟️': 'ticket',
-        '🗂️': 'folders', '🏬': 'warehouse', '🏷️': 'tag', '🚚': 'truck',
-        '🏢': 'building', '🧮': 'calculator', '💰': 'wallet', '💸': 'banknote',
-        '🏭': 'factory', '🤝': 'handshake', '💬': 'message-circle', '📈': 'line-chart',
-        '🔐': 'shield-check', '📜': 'scroll-text', '⚙️': 'settings'
+        '📊': 'layout-dashboard', '🛍️': 'shopping-bag', '🛒': 'shopping-cart', '📦': 'package',
+        '⚡': 'zap', '📋': 'clipboard-list', '👥': 'users', '🎟️': 'ticket',
+        '🗂️': 'folder-tree', '🏬': 'warehouse', '🏷️': 'tag', '🚚': 'truck',
+        '🏢': 'building-2', '🧮': 'calculator', '💰': 'banknote', '💸': 'coins',
+        '🏭': 'factory', '🤝': 'handshake', '💬': 'message-square', '📈': 'trending-up',
+        '🔐': 'shield-check', '📜': 'history', '⚙️': 'settings'
       };
       return map[ico] || 'circle';
     }
+
+    window.toggleSidebar = (show) => {
+      const sidebar = document.getElementById('mainSidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      if (!sidebar) return;
+
+      // إذا لم نرسل true أو false، نجعلها تعكس الحالة الحالية (Toggle)
+      const isCurrentlyOpen = sidebar.classList.contains('open');
+      const shouldOpen = (show === undefined) ? !isCurrentlyOpen : show;
+
+      if (shouldOpen) {
+        sidebar.classList.add('open');
+        overlay?.classList.add('active');
+      } else {
+        sidebar.classList.remove('open');
+        overlay?.classList.remove('active');
+      }
+    };
 
     /* Public shell shown to non-logged-in visitors */
     function PublicShell() {
@@ -1816,7 +1881,9 @@
              <span class="text-xl font-black text-slate-800">SEDY ERP</span>
           </div>
           <!-- زر إغلاق يظهر في الموبايل فقط -->
-          <button onclick="toggleSidebar(false)" class="lg:hidden p-2 text-slate-400 hover:bg-white rounded-xl"><i data-lucide="x"></i></button>
+          <button onclick="toggleSidebar()" class="lg:hidden w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 active:scale-90 transition-all">
+    <i data-lucide="menu" class="w-6 h-6"></i>
+</button>
         </div>
       </div>
       

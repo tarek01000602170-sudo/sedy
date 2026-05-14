@@ -4291,21 +4291,38 @@ ${State.data.users.map(u => {
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
-    // دالة منفصلة لرسم زر السلة العائم لضمان عدم التكرار
-    function renderFloatingCart() {
-      const totalInCart = cart.reduce((s, c) => s + c.qty, 0);
-      const existingFloatingCart = document.querySelector('.floating-cart');
-      if (existingFloatingCart) existingFloatingCart.remove();
+/* --- استبدل الدالة القديمة بهذا الكود المطور --- */
 
-      if (totalInCart > 0) {
-        const cartTotalMoney = cart.reduce((s, c) => s + c.price * c.qty, 0);
-        const html = `
-            <div class="floating-cart" onclick="State.page='cart';render()" style="position: fixed; bottom: 85px; inset-inline-end: 20px; background: #10b981; color: #fff; padding: 12px 25px; border-radius: 50px; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px; font-weight: bold; z-index: 1000; cursor: pointer;">
-                🛒 السلة (${totalInCart}) - ${money(cartTotalMoney)}
-            </div>`;
-        document.body.insertAdjacentHTML('beforeend', html);
-      }
+function renderFloatingCart() {
+    const totalInCart = cart.reduce((s, c) => s + c.qty, 0);
+    
+    // 1. نبحث هل الزر موجود بالفعل في الصفحة؟
+    let el = document.querySelector('.floating-cart');
+
+    // 2. إذا كانت السلة فارغة، نحذف الزر فوراً (إذا كان موجوداً) ثم نخرج
+    if (totalInCart <= 0) {
+        if (el) el.remove();
+        return;
     }
+
+    // 3. نجهز النص الجديد للسلة
+    const cartTotalMoney = cart.reduce((s, c) => s + c.price * c.qty, 0);
+    const cartText = `🛒 السلة (${totalInCart}) - ${money(cartTotalMoney)}`;
+
+    // 4. المنطق الذكي لتجنب التكرار:
+    if (el) {
+        // إذا الزر موجود (السطر 3705 القديم)، نكتفي بتغيير النص فقط ولا نضيف HTML جديدا
+        el.innerHTML = cartText;
+    } else {
+        // إذا الزر غير موجود، نقوم بإنشائه لأول مرة فقط (باستخدام الكود الأصلي)
+        const html = `
+        <div class="floating-cart" onclick="State.page='cart';render()" 
+             style="position: fixed; bottom: 85px; inset-inline-end: 20px; background: #10b981; color: #fff; padding: 12px 25px; border-radius: 50px; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px; font-weight: bold; z-index: 1000; cursor: pointer;">
+            ${cartText}
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
+    }
+}
 
     // دالة الفلترة
     window.filterShopByCat = (catId) => {

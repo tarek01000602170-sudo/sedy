@@ -1298,13 +1298,13 @@
        1. CONFIG & STATE
     =========================================================== */
     const FIREBASE_CONFIG = {
-      apiKey: "AIzaSyDKAbGLmhEm51wwKavmXDpEtZaq06UNfdY",
-      authDomain: "seedyseedy-37d9f.firebaseapp.com",
-      projectId: "seedyseedy-37d9f",
-      storageBucket: "seedyseedy-37d9f.firebasestorage.app",
-      messagingSenderId: "73399140830",
-      appId: "1:73399140830:web:a2cf58326216dced3d5d4f",
-      measurementId: "G-6WMRYB82YB"
+      apiKey: "AIzaSyChUXphmduWh9fCw0krYx_m7xxQX8nzSv0",
+      authDomain: "seedyseedy.firebaseapp.com",
+      projectId: "seedyseedy",
+      storageBucket: "seedyseedy.firebasestorage.app",
+      messagingSenderId: "1034684215735",
+      appId: "1:1034684215735:web:0f29e77e15880497eef832",
+      measurementId: "G-H6WJTKH2VF"
     };
     const USE_FIREBASE = true; // auto-set true when FIREBASE_CONFIG filled
     // تهيئة فيرباس
@@ -1377,64 +1377,38 @@
     =========================================================== */
     const Store = {
       KEY: 'erp_data_v1',
+      DOC_ID: 'sedy_private_store_tarek', // اسم فريد خاص بك فقط
 
-      // حفظ البيانات
       async save() {
-        // 1. الحفظ في المتصفح (للسرعة)
         localStorage.setItem(this.KEY, JSON.stringify(State.data));
-
-        // 2. الحفظ في فيرباس (للمزامنة)
-        if (USE_FIREBASE) {
+        if (USE_FIREBASE && typeof db !== 'undefined') {
           try {
-            await db.collection('settings').doc('main_data').set(State.data);
-            console.log("تم الحفظ في فيرباس ✅");
-          } catch (e) {
-            console.error("خطأ في حفظ فيرباس: ", e);
-          }
+            await db.collection('settings').doc(this.DOC_ID).set(State.data);
+            console.log("✅ تم الحفظ في السحابة");
+          } catch (e) { console.error("Cloud Save Error", e); }
         }
       },
 
-      // تحميل البيانات
       async load() {
-        // 1. تحميل أولي من الذاكرة المحلية لسرعة الاستجابة
+        // تحميل من الجهاز أولاً للسرعة
         try {
           const localData = JSON.parse(localStorage.getItem(this.KEY));
-          if (localData) {
-            State.data = localData;
-            render(); // ارسم الصفحة فوراً بالداتا القديمة حتى تصل الجديدة
-          }
-        } catch (e) { console.error("Local load fail"); }
+          if (localData) State.data = localData;
+        } catch (e) { }
 
-        // 2. المزامنة اللحظية مع Firebase
+        // المزامنة اللحظية
         if (USE_FIREBASE && typeof db !== 'undefined') {
-          db.collection('settings').doc('main_data').onSnapshot((doc) => {
+          db.collection('settings').doc(this.DOC_ID).onSnapshot((doc) => {
             if (doc.exists) {
               State.data = doc.data();
-              console.log("✅ وصلت البيانات الجديدة من السحابة");
-
-              // رسم التطبيق بالكامل فور وصول البيانات
               render();
-
-              // إذا كان المستخدم في المتجر أو POS، نتأكد من رسم القائمة بداخلهم
-              if (State.page === 'shop') renderShop();
-              if (State.page === 'pos') renderPosList();
-            } else {
-              // إذا كان الفيرباس فارغاً تماماً (أول مرة)
-              seedDemo();
-              this.save();
+              console.log("☁️ البيانات متزامنة الآن");
             }
           });
         }
-      },
-
-      reset() {
-        if (confirm("سيتم حذف كل البيانات من السحابة أيضاً! هل أنت متأكد؟")) {
-          localStorage.removeItem(this.KEY);
-          seedDemo();
-          this.save();
-        }
       }
     };
+
 
     function uid() { return Math.random().toString(36).slice(2, 10) }
     function now() { return Date.now() }
@@ -2565,6 +2539,13 @@
         Store.save(); closeModal(); render(); toast('تم تحديث بيانات المنتج بنجاح ✅', 'success');
       };
     }
+
+    window.forceUploadToCloud = async () => {
+      if (confirm("هل تريد رفع كافة البيانات الحالية للسحابة؟")) {
+        await Store.save();
+        alert("تمت المزامنة!");
+      }
+    };
 
     // تحديث عرض الصور المصغرة داخل المودال
     function refreshModalImgList() {
@@ -4259,8 +4240,8 @@ ${State.data.users.map(u => {
         const matchesSearch = name.includes(q);
         const matchesCat = (window.shopCategory === 'all' || p.cat === window.shopCategory);
 
-        // الشرط الجديد: يجب أن يكون المنتج متوفراً (isAvailable) والمخزون أكبر من صفر
-        const isVisible = (p.isAvailable !== false) && (p.stock > 0);
+        // تعديل: إظهار المنتج طالما أنه "متوفر للبيع" حتى لو المخزون صفر (ليراه العميل ويطلبه)
+        const isVisible = (p.isAvailable !== false);
 
         return matchesSearch && matchesCat && isVisible;
       });

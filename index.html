@@ -1717,9 +1717,9 @@
           { id: 's2', name: 'مورد الإلكترونيات', phone: '0226677889', debt: 0 }
         ],
         orders: [
-          { id: 'o1', code: 'ORD-1001', customerId: 'cu1', items: [{ pid: 'p1', qty: 2, price: 450 }, { pid: 'p5', qty: 3, price: 120 }], total: 1260, status: 'delivered', gov: 'القاهرة', shipping: 50, date: now() - 86400000 * 3, salesman: 'u2', paid: 1260 },
-          { id: 'o2', code: 'ORD-1002', customerId: 'cu2', items: [{ pid: 'p3', qty: 5, price: 180 }], total: 900, status: 'shipped', gov: 'الجيزة', shipping: 60, date: now() - 86400000 * 1, salesman: 'u2', paid: 900 },
-          { id: 'o3', code: 'ORD-1003', customerId: 'cu3', items: [{ pid: 'p2', qty: 1, price: 1200 }], total: 1200, status: 'pending', gov: 'الإسكندرية', shipping: 80, date: now() - 3600000 * 2, salesman: 'u2', paid: 0 }
+          { id: 'o1', code: 'ORD-1001', customerId: 'cu1', items: [{ pid: 'p1', qty: 2, price: 450 }, { pid: 'p5', qty: 3, price: 120 }], total: 1260, status: 'delivered', gov: 'القاهرة', shipping: 50, date: now() - 86400000 * 3, salesman: 'u2', salesmanId: 'u2', paid: 1260 },
+          { id: 'o2', code: 'ORD-1002', customerId: 'cu2', items: [{ pid: 'p3', qty: 5, price: 180 }], total: 900, status: 'shipped', gov: 'الجيزة', shipping: 60, date: now() - 86400000 * 1, salesman: 'u2', salesmanId: 'u2', paid: 900 },
+          { id: 'o3', code: 'ORD-1003', customerId: 'cu3', items: [{ pid: 'p2', qty: 1, price: 1200 }], total: 1200, status: 'pending', gov: 'الإسكندرية', shipping: 80, date: now() - 3600000 * 2, salesman: 'u2', salesmanId: 'u2', paid: 0 }
         ],
         expenses: [
           { id: 'e1', type: 'رواتب', amount: 25000, date: now() - 86400000 * 5, note: 'مرتبات يونيو' },
@@ -1731,9 +1731,9 @@
           { id: 'cp2', code: 'FREESHIP', discount: 50, type: 'fixed', used: 5, limit: 50 }
         ],
         notifications: [
-          { id: 'n1', title: 'طلب جديد #ORD-1003', time: now() - 3600000, read: false },
-          { id: 'n2', title: 'مخزون منخفض: ساعة ذكية', time: now() - 7200000, read: false },
-          { id: 'n3', title: 'تم شحن طلب #ORD-1002', time: now() - 86400000, read: true }
+          { id: 'n1', title: 'طلب جديد #ORD-1003', time: now() - 3600000, read: false, type: 'order', orderId: 'o3', salesmanId: 'u2' },
+          { id: 'n2', title: 'مخزون منخفض: ساعة ذكية', time: now() - 7200000, read: false, type: 'product', productId: 'p2', salesmanId: null },
+          { id: 'n3', title: 'تم شحن طلب #ORD-1002', time: now() - 86400000, read: true, type: 'order', orderId: 'o2', salesmanId: 'u2' }
         ],
         logs: [
           { id: 'l1', user: 'admin@erp.com', action: 'تسجيل دخول', time: now() - 3600000 },
@@ -2155,6 +2155,10 @@
         </div>
 
         <div class="flex items-center gap-2">
+            <button onclick="showNotifs()" class="relative w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 active:scale-95 transition-all">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+                ${getNotificationCount() ? `<span class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-5 h-5 rounded-full border-2 border-white flex items-center justify-center font-black">${getNotificationCount()}</span>` : ''}
+            </button>
             <button onclick="State.page='cart';render()" class="relative w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
                 <i data-lucide="shopping-cart" class="w-5 h-5"></i>
                 ${cart.length > 0 ? `<span class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-5 h-5 rounded-full border-2 border-white flex items-center justify-center font-black">${cart.length}</span>` : ''}
@@ -2187,13 +2191,62 @@
       else State.page = 'pos', render();
     }
     function showNotifs() {
-      State.data.notifications.forEach(n => n.read = true); Store.save();
-      const list = State.data.notifications.map(n => `
+      const visible = getVisibleNotifications();
+      visible.forEach(n => n.read = true);
+      Store.save();
+      const list = visible.map(n => `
     <div style="padding:12px;border-bottom:1px solid var(--border)">
       <div style="font-weight:700">${n.title}</div>
       <div class="muted" style="font-size:11px;margin-top:2px">${dateStr(n.time)}</div>
-    </div>`).join('') || '<div class="muted" style="text-align:center;padding:20px">لا توجد إشعارات</div>';
+    </div>`).join('') || '<div class="muted" style="text-align:center;padding:20px">لا توجد إشعارات جديدة</div>';
       modal(`<h2>🔔 الإشعارات</h2>${list}<div class="modal-actions"><button class="btn" onclick="closeModal()">إغلاق</button></div>`);
+    }
+
+    function getVisibleOrders() {
+      if (!State.user) return [];
+      if (State.user.role === 'super_admin') return State.data.orders || [];
+      return (State.data.orders || []).filter(o => o.salesmanId === State.user.id || o.salesman === State.user.id);
+    }
+
+    function getVisibleNotifications() {
+      if (!State.user) return [];
+      if (State.user.role === 'super_admin') return State.data.notifications || [];
+      return (State.data.notifications || []).filter(n => n.salesmanId === State.user.id);
+    }
+
+    function getNotificationCount() {
+      return getVisibleNotifications().filter(n => !n.read).length;
+    }
+
+    function notify({ type, title, orderId = null, productId = null, salesmanId = null }) {
+      State.data.notifications.unshift({
+        id: uid(),
+        title,
+        type,
+        orderId,
+        productId,
+        salesmanId,
+        time: now(),
+        read: false
+      });
+      Store.save();
+    }
+
+    function notifyOrderEvent(order, message) {
+      const target = order.salesmanId || order.salesman || null;
+      notify({ type: 'order', title: message, orderId: order.id, salesmanId: target });
+    }
+
+    function notifyProductEvent(message, productId = null) {
+      notify({ type: 'product', title: message, productId, salesmanId: null });
+    }
+
+    function orderProfit(order) {
+      return (order.items || []).reduce((sum, item) => {
+        const p = State.data.products.find(x => x.id === item.pid);
+        const cost = p ? p.cost || 0 : 0;
+        return sum + ((item.price - cost) * item.qty);
+      }, 0);
     }
 
     /* ===========================================================
@@ -2225,17 +2278,21 @@
        11. DASHBOARD
     =========================================================== */
     function Dashboard() {
-      const orders = State.data.orders;
-      const totalSales = orders.reduce((s, o) => s + o.total, 0);
-      const today = orders.filter(o => now() - o.date < 86400000);
-      const profit = totalSales - State.data.expenses.reduce((s, e) => s + e.amount, 0);
+      const visibleOrders = getVisibleOrders();
+      const totalSales = visibleOrders.reduce((s, o) => s + o.total, 0);
+      const today = visibleOrders.filter(o => now() - o.date < 86400000);
+      const deliveredOrders = visibleOrders.filter(o => o.status === 'delivered');
+      const pendingOrders = visibleOrders.filter(o => ['pending', 'processing', 'packed', 'shipped'].includes(o.status));
+      const deliveredProfit = deliveredOrders.reduce((s, o) => s + orderProfit(o), 0);
+      const pendingProfit = pendingOrders.reduce((s, o) => s + orderProfit(o), 0);
       const lowStock = State.data.products.filter(p => p.stock <= p.minStock).length;
+      const isAdmin = State.user && State.user.role === 'super_admin';
       return `
   <div class="kpi-grid mb-8">
-    ${kpi('💰', 'إجمالي المبيعات', money(totalSales), '+12%', 'up', 'linear-gradient(135deg,#2563eb,#1d4ed8)')}
-    ${kpi('📦', 'الطلبات اليوم', fmt(today.length), '+8%', 'up', 'linear-gradient(135deg,#0ea5e9,#0284c7)')}
-    ${kpi('👥', 'العملاء', fmt(State.data.customers.length), '+5%', 'up', 'linear-gradient(135deg,#6366f1,#4f46e5)')}
-    ${kpi('📈', 'الأرباح الصافية', money(profit), profit > 0 ? '+15%' : '-3%', profit > 0 ? 'up' : 'down', 'linear-gradient(135deg,#f59e0b,#d97706)')}
+    ${kpi('💰', isAdmin ? 'إجمالي المبيعات' : 'إجمالي مبيعاتك', money(totalSales), '+12%', 'up', 'linear-gradient(135deg,#2563eb,#1d4ed8)')}
+    ${kpi('📦', isAdmin ? 'الطلبات اليوم' : 'طلباتك اليوم', fmt(today.length), '+8%', 'up', 'linear-gradient(135deg,#0ea5e9,#0284c7)')}
+    ${kpi('📈', isAdmin ? 'أرباح التسليم' : 'أرباح الطلبات المسلمة', money(deliveredProfit), deliveredProfit >= 0 ? '+18%' : '-4%', deliveredProfit >= 0 ? 'up' : 'down', 'linear-gradient(135deg,#10b981,#059669)')}
+    ${kpi('⏳', isAdmin ? 'أرباح الطلبات المعلقة' : 'أرباح الطلبات قيد الإنجاز', money(pendingProfit), pendingProfit >= 0 ? '+6%' : '-2%', pendingProfit >= 0 ? 'up' : 'down', 'linear-gradient(135deg,#f97316,#ea580c)')}
   </div>
   <div class="grid cols-2 mb">
     <div class="card"><h3>المبيعات خلال 7 أيام</h3><canvas id="ch1" height="120"></canvas></div>
@@ -2245,7 +2302,7 @@
     <div class="card">
       <div class="flex between mb"><h3 style="margin:0">آخر الطلبات</h3><a href="#" onclick="State.page='orders';render()" class="pill">عرض الكل</a></div>
       <div class="table-wrap"><table><thead><tr><th>الكود</th><th>العميل</th><th>المبلغ</th><th>الحالة</th></tr></thead><tbody>
-      ${orders.slice(0, 5).map(o => { const c = State.data.customers.find(x => x.id === o.customerId); return `<tr><td><b>${o.code}</b></td><td>${c?.name || '-'}</td><td>${money(o.total)}</td><td><span class="tag ${o.status}">${statusAr(o.status)}</span></td></tr>` }).join('')}
+      ${visibleOrders.slice(0, 5).map(o => { const c = State.data.customers.find(x => x.id === o.customerId); return `<tr><td><b>${o.code}</b></td><td>${c?.name || '-'}</td><td>${money(o.total)}</td><td><span class="tag ${o.status}">${statusAr(o.status)}</span></td></tr>` }).join('')}
       </tbody></table></div>
     </div>
     <div class="card">
@@ -2259,9 +2316,10 @@
   </div>`;
     }
     Dashboard.after = () => {
+      const visibleOrders = getVisibleOrders();
       const chartOptions = {
         responsive: true,
-        maintainAspectRatio: false, // يسمح لنا بالتحكم في الارتفاع عبر CSS
+        maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
           y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } },
@@ -2269,16 +2327,24 @@
         }
       };
 
-      // 1. رسم بياني للمبيعات (ارتفاع ثابت)
+      const weekLabels = Array.from({ length: 7 }, (_, idx) => {
+        const day = new Date(Date.now() - ((6 - idx) * 86400000));
+        return day.toLocaleDateString('ar-EG', { weekday: 'short' });
+      });
+      const weekTotals = Array.from({ length: 7 }, (_, idx) => {
+        const day = new Date(Date.now() - ((6 - idx) * 86400000));
+        return visibleOrders.filter(o => new Date(o.date).toDateString() === day.toDateString()).reduce((s, o) => s + o.total, 0);
+      });
+
       const ctx1 = document.getElementById('ch1');
       if (ctx1) {
-        ctx1.parentElement.style.height = "250px"; // تثبيت الارتفاع
+        ctx1.parentElement.style.height = "250px";
         new Chart(ctx1, {
           type: 'line',
           data: {
-            labels: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'],
+            labels: weekLabels,
             datasets: [{
-              data: [1200, 1900, 800, 1500, 2200, 3000, 2500],
+              data: weekTotals,
               borderColor: '#2563eb',
               backgroundColor: 'rgba(37, 99, 235, 0.1)',
               fill: true,
@@ -2289,16 +2355,19 @@
         });
       }
 
-      // 2. رسم بياني لتوزيع الحالات (دائري ثابت)
       const ctx2 = document.getElementById('ch2');
       if (ctx2) {
-        ctx2.parentElement.style.height = "250px"; // تثبيت الارتفاع
+        ctx2.parentElement.style.height = "250px";
         new Chart(ctx2, {
           type: 'doughnut',
           data: {
             labels: ['تم التسليم', 'قيد الشحن', 'مرتجع'],
             datasets: [{
-              data: [65, 20, 15],
+              data: [
+                visibleOrders.filter(o => o.status === 'delivered').length,
+                visibleOrders.filter(o => o.status === 'shipped' || o.status === 'packed' || o.status === 'processing').length,
+                visibleOrders.filter(o => o.status === 'returned').length
+              ],
               backgroundColor: ['#10b981', '#2563eb', '#ef4444'],
               borderWidth: 0,
               hoverOffset: 10
@@ -2307,7 +2376,7 @@
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '70%' // جعل الدائرة أنحف وأكثر أناقة
+            cutout: '70%'
           }
         });
       }
@@ -2787,8 +2856,16 @@
           velocity: p.velocity || 1
         };
 
-        if (id) Object.assign(p, finalData);
-        else State.data.products.push({ id: uid(), ...finalData });
+        if (id) {
+          Object.assign(p, finalData);
+          if (p.stock <= p.minStock) {
+            notifyProductEvent(`المخزون منخفض للمنتج: ${p.name}`, p.id);
+          }
+        } else {
+          const newId = uid();
+          State.data.products.push({ id: newId, ...finalData });
+          notifyProductEvent(`تم إضافة منتج جديد: ${finalData.name}`, newId);
+        }
 
         Store.save(); closeModal(); render(); toast('تم تحديث بيانات المنتج بنجاح ✅', 'success');
       };
@@ -3028,34 +3105,37 @@
     ${deposit > 0 ? `<div class="flex between" style="padding:6px 0;background:var(--primary-soft);border-radius:8px;padding:8px 12px"><b style="color:var(--primary-2)">المتبقي</b><b style="color:var(--danger)">${money(remaining)}</b></div>` : ''}`;
     }
     function autoFillCustomer() {
-      const phone = document.getElementById('cusPhone').value;
-      const c = State.data.customers.find(x => x.phone === phone || x.phone2 === phone);
+      const phone = (document.getElementById('cusPhone')?.value || '').trim();
+      if (!phone) return;
+      const c = State.data.customers.find(x => x.phone === phone);
       if (c) {
         document.getElementById('cusName').value = c.name || '';
-        document.getElementById('cusPhone2').value = c.phone2 || '';
         const govSel = document.getElementById('cusGov');
         if (govSel) govSel.value = c.gov || 'القاهرة';
         const addrEl = document.getElementById('cusAddress');
         if (addrEl) addrEl.value = c.address || '';
-        toast('تم التعرف على العميل: ' + c.name + ' ✅', 'success');
+        if (window._lastAutoFillPhone !== phone) {
+          window._lastAutoFillPhone = phone;
+          toast('تم التعرف على العميل: ' + c.name + ' ✅', 'success');
+        }
       }
     }
     function checkout() {
       if (!cart.length) return toast('السلة فارغة! 🛒', 'warning');
 
-      // 1. قراءة البيانات من الواجهة
-      const phone = document.getElementById('cusPhone')?.value || '';
+      const phone = (document.getElementById('cusPhone')?.value || '').trim();
       const name = document.getElementById('cusName')?.value || 'عميل عابر';
       const gov = document.getElementById('cusGov')?.value || 'القاهرة';
       const address = document.getElementById('cusAddress')?.value || '';
-
-      // التأكد من قراءة العربون كرقـم (parseFloat)
       const depositInput = document.getElementById('posDeposit');
       const depositValue = depositInput ? parseFloat(depositInput.value) : 0;
 
-      // 2. إيجاد أو إنشاء العميل
       let cu = State.data.customers.find(x => x.phone === phone && phone !== '');
-      if (!cu && phone !== '') {
+      if (cu) {
+        cu.name = name;
+        cu.gov = gov;
+        cu.address = address;
+      } else if (phone !== '') {
         cu = { id: uid(), name, phone, gov, address, points: 0, total: 0 };
         State.data.customers.push(cu);
       }
@@ -3064,7 +3144,6 @@
       const ship = 50;
       const grandTotal = sub + ship;
 
-      // 3. إنشاء كائن الطلب مع المبالغ الصحيحة
       const order = {
         id: uid(),
         code: 'ORD-' + (1000 + State.data.orders.length + 1),
@@ -3078,19 +3157,17 @@
         date: now(),
         sellerName: State.user ? State.user.name : 'متجر أونلاين',
         salesmanId: State.user ? State.user.id : 'system',
-        // حفظ المبلغ المدفوع (عربون) والمتبقي
         paid: depositValue,
         remaining: grandTotal - depositValue
       };
 
-      // 4. تحديث المخزون
       cart.forEach(item => {
         const p = State.data.products.find(x => x.id === item.pid);
         if (p) p.stock -= item.qty;
       });
 
-      // 5. حفظ وتصفير السلة
       State.data.orders.unshift(order);
+      notifyOrderEvent(order, `طلب جديد تم تسجيله: ${order.code}`);
       cart = [];
       Store.save();
 
@@ -3102,6 +3179,7 @@
        14. ORDERS
     =========================================================== */
     function Orders() {
+      const visibleOrders = getVisibleOrders();
       return `
   <div class="bg-white rounded-[2rem] p-6 border border-slate-100 soft-shadow">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -3135,7 +3213,7 @@
           </tr>
         </thead>
         <tbody id="ordBody">
-          ${orderRows(State.data.orders)}
+          ${orderRows(visibleOrders)}
         </tbody>
       </table>
     </div>
@@ -3190,13 +3268,25 @@
     </tr>`;
       }).join('') || `<tr><td colspan="7" class="py-20 text-center text-slate-300 font-bold italic">لا توجد طلبات مسجلة</td></tr>`;
     }
-    function filterOrders(q) { q = q.toLowerCase(); document.getElementById('ordBody').innerHTML = orderRows(State.data.orders.filter(o => o.code.toLowerCase().includes(q))); }
-    function filterOrdersStatus(s) { document.getElementById('ordBody').innerHTML = orderRows(s ? State.data.orders.filter(o => o.status === s) : State.data.orders); }
+    function filterOrders(q) {
+      q = q.toLowerCase();
+      document.getElementById('ordBody').innerHTML = orderRows(getVisibleOrders().filter(o => o.code.toLowerCase().includes(q)));
+    }
+    function filterOrdersStatus(s) {
+      document.getElementById('ordBody').innerHTML = orderRows(s ? getVisibleOrders().filter(o => o.status === s) : getVisibleOrders());
+    }
     const STATUS_FLOW = ['pending', 'processing', 'packed', 'shipped', 'delivered'];
     function advanceStatus(id) {
       const o = State.data.orders.find(x => x.id === id);
+      if (!o) return;
       const i = STATUS_FLOW.indexOf(o.status);
-      if (i < STATUS_FLOW.length - 1) { o.status = STATUS_FLOW[i + 1]; Store.save(); toast('تم تحديث الحالة', 'success'); render(); }
+      if (i < STATUS_FLOW.length - 1) {
+        o.status = STATUS_FLOW[i + 1];
+        Store.save();
+        notifyOrderEvent(o, `حالة الطلب ${o.code} تم تحديثها إلى ${statusAr(o.status)}`);
+        toast('تم تحديث الحالة', 'success');
+        render();
+      }
     }
     function viewOrder(id) {
       const o = State.data.orders.find(x => x.id === id);
@@ -3526,7 +3616,15 @@
             <input id="bcH" type="number" value="6" oninput="genBC()" class="bg-slate-50 border-none rounded-2xl p-4 text-sm">
           </div>
         </div>
-        <button onclick="window.print()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+        <div class="row">
+          <label class="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-wider">اتجاه الطباعة</label>
+          <select id="bcOrientation" onchange="setBarcodePrintOrientation();genBC()" class="w-full bg-slate-50 border-none rounded-2xl p-4 text-sm">
+            <option value="portrait">عمودي (Portrait)</option>
+            <option value="landscape">أفقي (Landscape)</option>
+          </select>
+          <div class="text-slate-400 text-[11px] mt-2">سيتم تطبيق الاتجاه على معيار الطباعة قدر الإمكان وفقاً لحجم الصفحة.</div>
+        </div>
+        <button onclick="setBarcodePrintOrientation(); window.print()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
           <i data-lucide="printer" class="w-5 h-5"></i> طباعة الملصق
         </button>
       </div>
@@ -3564,7 +3662,17 @@
     </div>
   </div>`;
     }
-    Barcode.after = () => { genBC(); genCustomerLabel(); };
+    Barcode.after = () => { setBarcodePrintOrientation(); genBC(); genCustomerLabel(); };
+    function setBarcodePrintOrientation() {
+      const orientation = document.getElementById('bcOrientation')?.value || 'portrait';
+      let style = document.getElementById('bcPrintOrientation');
+      if (!style) {
+        style = document.createElement('style');
+        style.id = 'bcPrintOrientation';
+        document.head.appendChild(style);
+      }
+      style.textContent = `@page { size: A4 ${orientation}; margin: 10mm; } @media print { body { -webkit-print-color-adjust: exact; color-adjust: exact; } }`;
+    }
     function genBC() {
       const id = document.getElementById('bcProd')?.value;
       const p = State.data.products.find(x => x.id === id);
@@ -4442,7 +4550,7 @@ ${State.data.users.map(u => {
     <div class="space-y-12">
       <!-- شريط العنوان والبحث للموبايل -->
       <div class="lg:hidden space-y-4">
-        <h3 class="text-3xl font-black text-slate-900 italic">Explore.</h3>
+        <h3 class="text-3xl font-black text-slate-900 italic">بلاكونتك وحديقتك أجمل معانا</h3>
         <div class="flex items-center bg-white border border-slate-100 rounded-[1.5rem] px-4 py-3 gap-3 soft-shadow">
             <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
             <input id="shopS_mobile" oninput="document.getElementById('shopS').value=this.value; renderShop()" placeholder="ابحث عن منتج..." class="bg-transparent border-none text-sm w-full focus:ring-0">
@@ -4602,19 +4710,60 @@ ${State.data.users.map(u => {
       toast('أُضيف للسلة 🛒', 'success');
     }
     function Cart() {
-      if (!cart.length) return `<div class="card" style="text-align:center;padding:60px"><div style="font-size:60px">🛒</div><h3>السلة فارغة</h3><button class="btn primary" onclick="State.page='shop';render()">تسوق الآن</button></div>`;
-      const sub = cart.reduce((s, c) => s + c.price * c.qty, 0);
-      return `<div class="card"><h3>🛒 سلة التسوق</h3>
-    ${cart.map((c, i) => `<div class="flex between" style="padding:14px 0;border-bottom:1px solid var(--border)">
-      <div style="flex:1"><b>${c.name}</b><div class="muted">${money(c.price)}</div></div>
-      <div class="flex">
-        <button class="btn sm" onclick="cart[${i}].qty=Math.max(1,cart[${i}].qty-1);render()">−</button>
-        <b>${c.qty}</b>
-        <button class="btn sm" onclick="cart[${i}].qty++;render()">+</button>
-        <button class="btn sm danger" onclick="cart.splice(${i},1);render()">×</button>
-      </div></div>`).join('')}
-    <div style="font-size:20px;text-align:end;margin-top:14px"><b>الإجمالي: ${money(sub + 50)}</b></div>
-    <button class="btn primary" style="width:100%;justify-content:center;padding:14px;margin-top:14px" onclick="checkoutCustomer()">إتمام الشراء</button></div>`;
+      const visibleOrders = getVisibleOrders();
+      const employee = State.user && State.user.role !== 'customer' && State.user.role !== undefined;
+      const pendingOrders = visibleOrders.filter(o => ['pending', 'processing', 'packed', 'shipped'].includes(o.status));
+      const deliveredOrders = visibleOrders.filter(o => o.status === 'delivered');
+      const pendingProfit = pendingOrders.reduce((s, o) => s + orderProfit(o), 0);
+      const deliveredProfit = deliveredOrders.reduce((s, o) => s + orderProfit(o), 0);
+      const reservedItems = pendingOrders.flatMap(o => o.items.map(it => ({ pid: it.pid, qty: it.qty })));
+      const groupedReserved = reservedItems.reduce((acc, item) => {
+        const key = item.pid;
+        acc[key] = acc[key] || { pid: item.pid, qty: 0 };
+        acc[key].qty += item.qty;
+        return acc;
+      }, {});
+      const reservedHtml = Object.values(groupedReserved).map(item => {
+        const prod = State.data.products.find(x => x.id === item.pid) || {};
+        return `<div class="flex between" style="padding:10px 0;border-bottom:1px solid var(--border)"><div>${prod.name || 'منتج محذوف'}</div><div class="muted">${item.qty} قطعة</div></div>`;
+      }).join('') || '<div class="muted">لا توجد منتجات محفوظة</div>';
+
+      const cartHtml = cart.length ? (() => {
+        const sub = cart.reduce((s, c) => s + c.price * c.qty, 0);
+        return `<div class="card"><h3>🛒 سلة التسوق</h3>
+      ${cart.map((c, i) => `<div class="flex between" style="padding:14px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1"><b>${c.name}</b><div class="muted">${money(c.price)}</div></div>
+        <div class="flex">
+          <button class="btn sm" onclick="cart[${i}].qty=Math.max(1,cart[${i}].qty-1);render()">−</button>
+          <b>${c.qty}</b>
+          <button class="btn sm" onclick="cart[${i}].qty++;render()">+</button>
+          <button class="btn sm danger" onclick="cart.splice(${i},1);render()">×</button>
+        </div></div>`).join('')}
+      <div style="font-size:20px;text-align:end;margin-top:14px"><b>الإجمالي: ${money(sub + 50)}</b></div>
+      <button class="btn primary" style="width:100%;justify-content:center;padding:14px;margin-top:14px" onclick="checkoutCustomer()">إتمام الشراء</button></div>`;
+      })() : `<div class="card" style="text-align:center;padding:60px"><div style="font-size:60px">🛒</div><h3>السلة فارغة</h3><button class="btn primary" onclick="State.page='shop';render()">تسوق الآن</button></div>`;
+
+      if (!cart.length && !employee) return cartHtml;
+
+      return `<div class="grid gap-8 ${employee ? 'lg:grid-cols-[1.4fr_0.9fr]' : ''}">
+        ${employee ? `<div class="card">
+          <h3>📊 ملخص المبيعات الخاصة بك</h3>
+          <div class="grid grid-cols-2 gap-4 mt-6">
+            <div class="bg-slate-50 rounded-3xl p-5 text-center">
+              <div class="muted text-[11px] uppercase tracking-wider mb-2">الطلبات المعلقة</div>
+              <div class="text-2xl font-black">${fmt(pendingOrders.length)}</div>
+              <div class="muted text-[11px] mt-2">أرباح متوقعة ${money(pendingProfit)}</div>
+            </div>
+            <div class="bg-slate-50 rounded-3xl p-5 text-center">
+              <div class="muted text-[11px] uppercase tracking-wider mb-2">الطلبات المسلمة</div>
+              <div class="text-2xl font-black">${fmt(deliveredOrders.length)}</div>
+              <div class="muted text-[11px] mt-2">أرباح محققة ${money(deliveredProfit)}</div>
+            </div>
+          </div>
+          <div class="mt-6"><h4 class="font-black">المنتجات المحفوظة الآن</h4>${reservedHtml}</div>
+        </div>` : ''}
+        ${cartHtml}
+      </div>`;
     }
     function checkoutCustomer() {
       const u = State.user; // قد يكون نول إذا كان العميل لم يسجل دخول
@@ -4625,20 +4774,20 @@ ${State.data.users.map(u => {
       const order = {
         id: uid(),
         code: 'WEB-' + (1000 + State.data.orders.length + 1),
-        customerId: null, // يمكن ربطه لاحقاً
+        customerId: null,
         items: cart.map(c => ({ pid: c.pid, qty: c.qty, price: c.price })),
         total: sub + 50,
         status: 'pending',
         gov: 'القاهرة',
         shipping: 50,
         date: now(),
-        // ربط الطلب بالبائع صاحب اللينك
         salesmanId: refId || 'online',
         sellerName: refSeller ? refSeller.name : 'متجر أونلاين مباشر',
         paid: 0
       };
 
       State.data.orders.unshift(order);
+      notifyOrderEvent(order, `تم إنشاء طلب ويب جديد ${order.code}`);
       cart = [];
       Store.save();
       toast('تم استلام طلبك بنجاح وسيتواصل معك البائع ✅', 'success');

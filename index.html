@@ -4,9 +4,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover, shrink-to-fit=no" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="x-ua-compatible" content="IE=edge">
   <title>Seedy Seedy</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -104,6 +108,15 @@
       font-family: 'Cairo', sans-serif;
       overflow-x: hidden;
       -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      scroll-behavior: smooth;
+    }
+
+    input, textarea, select {
+      -webkit-user-select: text;
+      user-select: text;
     }
 
     /* هيكل التطبيق الأساسي */
@@ -143,15 +156,20 @@
     /* --- تعديلات الموبايل والتابلت (الشاشات الصغيرة) --- */
     /* تأثير انزلاق القائمة من اليمين */
     @media (max-width: 1024px) {
+      :root {
+        --sidebar-w: 100%;
+      }
+      
       .sidebar {
         transform: translateX(100%);
-        /* البداية خارج الشاشة يميناً */
+        width: 80%;
+        max-width: 320px;
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
         transition: transform 0.3s ease-in-out !important;
       }
 
       .sidebar.open {
         transform: translateX(0) !important;
-        /* الدخول للشاشة */
       }
 
       /* الغطاء الشفاف */
@@ -164,6 +182,7 @@
       .overlay.active {
         opacity: 1;
         pointer-events: auto;
+        background: rgba(15, 23, 42, 0.4);
       }
     }
 
@@ -172,26 +191,28 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      /* مسافة بين الأيقونة والنص */
-      padding: 12px 16px;
-      margin: 4px 12px;
-      border-radius: 16px;
+      padding: 14px 16px;
+      margin: 6px 10px;
+      border-radius: 14px;
       color: #64748b;
-      /* لون رمادي هادئ Slate-500 */
       font-weight: 700;
       font-size: 13.5px;
       transition: all 0.2s ease;
       text-decoration: none !important;
-      /* إلغاء الخط الأزرق نهائياً */
+      cursor: pointer;
+      min-height: 48px;
+      -webkit-tap-highlight-color: transparent;
     }
 
     /* حالة التحويم (Hover) */
     .nav-link:hover {
       background: #f1f5f9;
       color: #2563eb;
-      /* Blue-600 */
       transform: translateX(-4px);
-      /* حركة بسيطة لليمين عند التأشير */
+    }
+
+    .nav-link:active {
+      transform: scale(0.98);
     }
 
     /* الحالة النشطة (Active) */
@@ -325,7 +346,17 @@
       color: var(--text);
       font-family: 'Cairo', 'Inter', system-ui, sans-serif;
       font-size: 14px;
-      -webkit-font-smoothing: antialiased
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-size-adjust: 100%;
+    }
+
+    @media (max-width: 480px) {
+      html,
+      body {
+        font-size: 13px;
+      }
     }
 
     html[dir="ltr"] body {
@@ -345,16 +376,26 @@
       color: inherit
     }
 
+    /* Responsive Images */
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
     /* تنسيقات معرض الصور والزوم */
     .product-gallery {
       display: flex;
       flex-direction: column;
       gap: 10px;
+      width: 100%;
     }
 
     .main-img-container {
       width: 100%;
-      height: 300px;
+      max-width: 100%;
+      height: auto;
+      aspect-ratio: 1;
       overflow: hidden;
       border-radius: var(--radius);
       border: 1px solid var(--border);
@@ -367,10 +408,11 @@
       height: 100%;
       object-fit: contain;
       transition: transform 0.3s ease;
+      display: block;
     }
 
     .main-img-container:hover img {
-      transform: scale(1.8);
+      transform: scale(1.2);
     }
 
     /* قوة الزوم */
@@ -379,10 +421,15 @@
       display: flex;
       gap: 8px;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       padding: 5px 0;
+      margin: 0 -5px;
+      padding-left: 5px;
+      padding-right: 5px;
     }
 
     .thumb-item {
+      flex-shrink: 0;
       width: 60px;
       height: 60px;
       border-radius: 8px;
@@ -398,11 +445,11 @@
     /* زر السلة العائم للموبايل */
     .floating-cart {
       position: fixed;
-      bottom: 85px;
-      inset-inline-end: 20px;
+      bottom: 90px;
+      inset-inline-end: 16px;
       background: var(--success);
       color: #fff;
-      padding: 12px 20px;
+      padding: 12px 18px;
       border-radius: 30px;
       box-shadow: var(--shadow-lg);
       display: flex;
@@ -411,18 +458,20 @@
       font-weight: bold;
       z-index: 40;
       cursor: pointer;
+      min-height: 44px;
+      -webkit-tap-highlight-color: transparent;
     }
 
     input,
     select,
     textarea {
       font-family: inherit;
-      font-size: 14px;
+      font-size: 16px;
       color: var(--text);
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 10px 12px;
+      padding: 12px 14px;
       width: 100%;
       outline: none;
       transition: .2s
@@ -461,7 +510,8 @@
       display: flex;
       flex-direction: column;
       transition: .3s;
-      z-index: 50
+      z-index: 50;
+      overflow-y: auto;
     }
 
     html[dir="ltr"] .sidebar {
@@ -558,7 +608,8 @@
     .main {
       flex: 1;
       margin-inline-start: var(--sidebar-w);
-      min-width: 0
+      min-width: 0;
+      overflow-x: hidden;
     }
 
     html[dir="ltr"] .main {
@@ -572,16 +623,21 @@
       z-index: 40;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 12px 20px;
+      padding: 14px 16px;
       display: flex;
       align-items: center;
-      gap: 12px
+      gap: 12px;
+      min-height: 56px;
     }
 
     .topbar h1 {
       margin: 0;
-      font-size: 18px;
-      font-weight: 800
+      font-size: 16px;
+      font-weight: 800;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .topbar .spacer {
@@ -589,14 +645,21 @@
     }
 
     .topbar .icon-btn {
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
       border-radius: 10px;
       background: var(--surface-2);
       display: grid;
       place-items: center;
       color: var(--text);
-      position: relative
+      position: relative;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .topbar .icon-btn:active {
+      transform: scale(0.95);
     }
 
     .topbar .icon-btn .badge {
@@ -627,22 +690,25 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 18px
+      padding: 20px;
+      overflow-x: hidden;
     }
 
     .card h3 {
-      margin: 0 0 14px;
+      margin: 0 0 16px;
       font-size: 15px;
-      font-weight: 800
+      font-weight: 800;
+      word-break: break-word;
     }
 
     .grid {
       display: grid;
-      gap: 16px
+      gap: 16px;
+      width: 100%;
     }
 
     .grid.cols-4 {
-      grid-template-columns: repeat(4, 1fr)
+      grid-template-columns: repeat(4, 1fr);
     }
 
     .grid.cols-3 {
@@ -653,14 +719,15 @@
       grid-template-columns: repeat(2, 1fr)
     }
 
+    /* تنسيق روابط القائمة الجانبية المطور */
     .kpi {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 18px;
+      padding: 16px;
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       box-shadow: var(--shadow);
       transition: .25s
     }
@@ -671,13 +738,14 @@
     }
 
     .kpi .ic {
-      width: 50px;
-      height: 50px;
+      width: 48px;
+      height: 48px;
+      min-width: 48px;
       border-radius: 14px;
       display: grid;
       place-items: center;
       font-size: 22px;
-      color: #fff
+      color: #fff;
     }
 
     .kpi .label {
@@ -687,9 +755,10 @@
     }
 
     .kpi .value {
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 900;
-      margin-top: 2px
+      margin-top: 2px;
+      word-break: break-word;
     }
 
     .kpi .delta {
@@ -711,18 +780,26 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 10px 16px;
+      padding: 12px 18px;
       border-radius: 10px;
       font-weight: 700;
       font-size: 13.5px;
       background: var(--surface-2);
       color: var(--text);
       border: 1px solid var(--border);
-      transition: .2s
+      transition: .2s;
+      min-height: 44px;
+      min-width: 44px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .btn:hover {
       transform: translateY(-1px)
+    }
+
+    .btn:active {
+      transform: scale(0.98);
     }
 
     .btn.primary {
@@ -749,13 +826,14 @@
     }
 
     .btn.sm {
-      padding: 6px 10px;
+      padding: 8px 12px;
       font-size: 12px
     }
 
     /* Tables */
     .table-wrap {
-      overflow: auto;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       border-radius: var(--radius);
       border: 1px solid var(--border);
       background: var(--surface)
@@ -764,7 +842,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 640px
+      min-width: 100%;
     }
 
     th,
@@ -772,7 +850,9 @@
       padding: 12px 14px;
       text-align: start;
       border-bottom: 1px solid var(--border);
-      font-size: 13px
+      font-size: 13px;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
 
     th {
@@ -781,7 +861,8 @@
       color: var(--muted);
       font-size: 11.5px;
       text-transform: uppercase;
-      letter-spacing: .5px
+      letter-spacing: .5px;
+      white-space: nowrap;
     }
 
     tbody tr:hover {
@@ -845,7 +926,9 @@
       align-items: center;
       justify-content: center;
       z-index: 100;
-      padding: 20px
+      padding: 16px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .modal-bg.open {
@@ -859,15 +942,17 @@
       width: 100%;
       max-width: 560px;
       max-height: 90vh;
-      overflow: auto;
-      padding: 22px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 20px;
       box-shadow: var(--shadow-lg);
       animation: pop .25s
     }
 
     .modal h2 {
       margin: 0 0 16px;
-      font-size: 18px
+      font-size: 18px;
+      word-break: break-word;
     }
 
     .modal .row {
@@ -884,6 +969,7 @@
 
     .modal-actions {
       display: flex;
+      flex-wrap: wrap;
       justify-content: flex-end;
       gap: 8px;
       margin-top: 18px
@@ -893,16 +979,18 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 12px;
       background: var(--surface-2);
-      padding: 8px;
-      border-radius: 10px;
-      margin-top: 10px;
+      padding: 12px;
+      border-radius: 12px;
+      margin-top: 12px;
     }
 
     .qty-btn-circle {
-      width: 32px;
-      height: 32px;
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      min-height: 40px;
       border-radius: 50%;
       background: var(--primary);
       color: white;
@@ -912,11 +1000,17 @@
       font-weight: bold;
       cursor: pointer;
       transition: 0.2s;
+      border: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .qty-btn-circle:hover {
       transform: scale(1.1);
       background: var(--primary-2);
+    }
+
+    .qty-btn-circle:active {
+      transform: scale(0.9);
     }
 
     .qty-btn-circle.minus {
@@ -1035,7 +1129,7 @@
       display: grid;
       place-items: center;
       background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
-      padding: 20px
+      padding: 16px;
     }
 
     .login-card {
@@ -1043,8 +1137,14 @@
       width: 100%;
       max-width: 420px;
       border-radius: 20px;
-      padding: 32px;
-      box-shadow: var(--shadow-lg)
+      padding: 24px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    @media (max-width: 480px) {
+      .login-card {
+        padding: 20px;
+      }
     }
 
     .login-card .logo {
@@ -1063,7 +1163,7 @@
     .login-card h1 {
       margin: 0 0 6px;
       text-align: center;
-      font-size: 22px
+      font-size: 20px;
     }
 
     .login-card p {
@@ -1095,9 +1195,11 @@
       display: none;
       position: fixed;
       bottom: 20px;
-      inset-inline-end: 20px;
+      inset-inline-end: 16px;
       width: 56px;
       height: 56px;
+      min-width: 56px;
+      min-height: 56px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--primary), var(--info));
       color: #fff;
@@ -1105,7 +1207,14 @@
       box-shadow: var(--shadow-lg);
       z-index: 30;
       align-items: center;
-      justify-content: center
+      justify-content: center;
+      border: none;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .fab:active {
+      transform: scale(0.9);
     }
 
     /* Mobile */
@@ -1121,24 +1230,41 @@
       .grid.cols-2 {
         grid-template-columns: 1fr
       }
+      
+      .main {
+        margin-inline: 0 !important;
+      }
     }
 
     @media(max-width:768px) {
+      :root {
+        --sidebar-w: 0;
+      }
+      
       .sidebar {
-        transform: translateX(-100%);
-        box-shadow: var(--shadow-lg)
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 75%;
+        max-width: 280px;
+        height: 100vh;
+        transform: translateX(100%);
+        box-shadow: -4px 0 15px rgba(0, 0, 0, 0.15);
+        z-index: 200;
       }
 
       html[dir="ltr"] .sidebar {
-        transform: translateX(-100%)
-      }
-
-      html[dir="rtl"] .sidebar {
-        transform: translateX(-100%)
+        left: 0;
+        right: auto;
+        transform: translateX(-100%);
       }
 
       .sidebar.open {
-        transform: translateX(0)
+        transform: translateX(0) !important;
+      }
+
+      html[dir="ltr"] .sidebar.open {
+        transform: translateX(0) !important;
       }
 
       .main {
@@ -1154,11 +1280,132 @@
       }
 
       .grid.cols-4 {
-        grid-template-columns: 1fr 1fr
+        grid-template-columns: 1fr
+      }
+      
+      .grid.cols-3 {
+        grid-template-columns: 1fr
+      }
+      
+      .grid.cols-2 {
+        grid-template-columns: 1fr
       }
 
       .content {
-        padding: 14px
+        padding: 12px !important
+      }
+      
+      table {
+        font-size: 12px !important;
+      }
+      
+      th, td {
+        padding: 10px 8px !important;
+        font-size: 11px !important;
+      }
+      
+      .btn {
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+      
+      .modal {
+        width: 95%;
+        max-width: 100%;
+        max-height: 95vh;
+        padding: 16px;
+      }
+      
+      .topbar {
+        padding: 10px 12px !important;
+      }
+      
+      .topbar h1 {
+        font-size: 14px;
+      }
+    }
+    
+    @media(max-width:480px) {
+      :root {
+        font-size: 13px;
+      }
+      
+      .sidebar {
+        width: 85%;
+        max-width: 280px;
+      }
+      
+      .kpi-grid {
+        grid-template-columns: 1fr !important;
+      }
+      
+      .grid {
+        gap: 12px;
+      }
+      
+      .card {
+        padding: 14px;
+      }
+      
+      .content {
+        padding: 10px;
+      }
+      
+      .btn {
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+      
+      .topbar {
+        height: 56px !important;
+        padding: 8px !important;
+      }
+      
+      .topbar h1 {
+        font-size: 12px;
+      }
+      
+      .icon-btn {
+        width: 32px !important;
+        height: 32px !important;
+      }
+      
+      table {
+        font-size: 11px !important;
+        min-width: 500px;
+      }
+      
+      th, td {
+        padding: 8px 6px !important;
+      }
+      
+      .kpi {
+        padding: 12px;
+        gap: 10px;
+      }
+      
+      .kpi .ic {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+      }
+      
+      .kpi .value {
+        font-size: 16px;
+      }
+      
+      .modal {
+        padding: 14px;
+      }
+      
+      .main-img-container {
+        height: 250px;
+      }
+      
+      .floating-cart {
+        bottom: 75px;
+        padding: 10px 16px;
+        font-size: 12px;
       }
     }
 
@@ -1182,8 +1429,9 @@
 
     .flex {
       display: flex;
-      gap: 10px;
-      align-items: center
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
     .flex.between {
@@ -1203,11 +1451,21 @@
     }
 
     .mt {
-      margin-top: 16px
+      margin-top: 18px
     }
 
     .mb {
-      margin-bottom: 16px
+      margin-bottom: 18px
+    }
+
+    @media (max-width: 480px) {
+      .mt {
+        margin-top: 12px;
+      }
+
+      .mb {
+        margin-bottom: 12px;
+      }
     }
 
     .hidden {
@@ -1215,7 +1473,7 @@
     }
 
     .pill {
-      padding: 4px 10px;
+      padding: 6px 14px;
       border-radius: 20px;
       background: var(--primary-soft);
       color: var(--primary-2);
@@ -1227,20 +1485,21 @@
       display: flex;
       gap: 10px;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       padding: 10px 0;
+      margin: 0 -20px;
+      padding-left: 20px;
+      padding-right: 20px;
       margin-bottom: 20px;
       scrollbar-width: none;
-      /* لإخفاء السكرول في فيرفوكس */
     }
 
     .category-bar::-webkit-scrollbar {
       display: none;
     }
 
-    /* لإخفاء السكرول في كروم */
-
     .cat-chip {
-      padding: 8px 18px;
+      padding: 10px 18px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 20px;
@@ -1248,6 +1507,13 @@
       font-weight: 600;
       cursor: pointer;
       transition: 0.2s;
+      flex-shrink: 0;
+      min-height: 40px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .cat-chip:active {
+      transform: scale(0.95);
     }
 
     .cat-chip.active {
@@ -1720,37 +1986,38 @@
        ✨ أنت تتسوق الآن من متجر: ${refSeller.name}
     </div>` : ''}
 
-    <header class="h-24 sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-100 px-6 md:px-16 flex items-center justify-between transition-all">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-blue-600 rounded-[1.2rem] flex items-center justify-center text-white shadow-xl shadow-blue-200">
-          <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+    <header class="h-auto md:h-24 sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-100 px-4 md:px-16 py-4 md:py-0 flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4 transition-all min-h-[60px]">
+      <div class="flex items-center gap-3 md:gap-4 w-full md:w-auto">
+        <div class="w-10 md:w-12 h-10 md:h-12 bg-blue-600 rounded-[1.2rem] flex items-center justify-center text-white shadow-xl shadow-blue-200 flex-shrink-0">
+          <i data-lucide="shopping-bag" class="w-5 md:w-6 h-5 md:h-6"></i>
         </div>
-        <div>
-          <h1 class="text-xl font-black text-slate-900 leading-none">SEEDY SEEDY</h1>
-          <span class="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase">أبصال وبذور</span>
+        <div class="min-w-0">
+          <h1 class="text-lg md:text-xl font-black text-slate-900 leading-none truncate">SEEDY SEEDY</h1>
+          <span class="text-[9px] md:text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase block">أبصال وبذور</span>
         </div>
       </div>
 
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2 md:gap-4 w-full md:w-auto">
         <!-- البحث السريع في الهيدر -->
-        <div class="hidden lg:flex items-center bg-slate-100 rounded-2xl px-4 py-2 gap-3 w-80">
-            <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+        <div class="hidden lg:flex items-center bg-slate-100 rounded-2xl px-4 py-2 gap-3 flex-1 md:w-80 min-h-[40px]">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
             <input id="shopS" oninput="renderShop()" placeholder="ابحث عن منتجاتك المفضلة..." class="bg-transparent border-none text-xs font-bold focus:ring-0 w-full">
         </div>
 
         <div class="flex items-center gap-2">
-            <button onclick="State.page='cart';render()" class="relative w-12 h-12 flex items-center justify-center bg-white rounded-2xl border border-slate-100 shadow-sm hover:bg-slate-50 transition-all">
+            <button onclick="State.page='cart';render()" class="relative min-w-[44px] min-h-[44px] w-10 md:w-12 h-10 md:h-12 flex items-center justify-center bg-white rounded-2xl border border-slate-100 shadow-sm hover:bg-slate-50 transition-all active:scale-90">
                 <i data-lucide="shopping-cart" class="w-5 h-5 text-slate-600"></i>
-                ${cartCount > 0 ? `<span class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-4 border-[#f8fafc]">${cartCount}</span>` : ''}
+                ${cartCount > 0 ? `<span class="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black w-6 h-6 rounded-full flex items-center justify-center border-4 border-[#f8fafc]">${cartCount}</span>` : ''}
             </button>
-            <button onclick="showLoginModal()" class="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs hover:bg-slate-800 shadow-xl shadow-slate-200 transition-all">
-                <i data-lucide="user-circle" class="w-4 h-4 text-slate-400"></i>
+            <button onclick="showLoginModal()" class="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-slate-900 text-white rounded-2xl font-black text-xs md:text-xs min-h-[44px] hover:bg-slate-800 shadow-xl shadow-slate-200 transition-all active:scale-90">
+                <i data-lucide="user-circle" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+                <span class="hidden md:inline">دخول</span>
             </button>
         </div>
       </div>
     </header>
 
-    <main class="p-6 md:p-16 max-w-[1600px] mx-auto" id="page"></main>
+    <main class="p-4 md:p-8 lg:p-16 max-w-[1600px] mx-auto w-full" id="page"></main>
   </div>`;
     }
 

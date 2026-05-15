@@ -16,12 +16,15 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 
   <!-- أضف هذا داخل الـ head -->
   <meta name="apple-mobile-web-app-title" content="Seedy Seedy">
+  <meta name="msapplication-TileColor" content="#2563eb">
+  <meta name="msapplication-TileImage" content="apple-touch-icon.png">
   <!-- تعريف الأيقونة للتثبيت -->
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5609/5609352.png">
-  <link rel="apple-touch-startup-image" href="splash.svg">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -1544,70 +1547,6 @@
         color: #000
       }
     }
-
-    body {
-      background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.14), transparent 22%),
-                  radial-gradient(circle at bottom left, rgba(96, 165, 250, 0.12), transparent 18%),
-                  #f8fafc;
-      color: #0f172a;
-    }
-
-    .topbar,
-    .sidebar,
-    .card,
-    .modal,
-    .toast {
-      background: rgba(255, 255, 255, 0.88);
-      backdrop-filter: blur(16px);
-    }
-
-    .card {
-      background: rgba(255, 255, 255, 0.83);
-      border-color: rgba(226, 232, 240, 0.75);
-      box-shadow: 0 22px 50px rgba(15, 23, 42, 0.08);
-    }
-
-    .glass-card {
-      background: rgba(255, 255, 255, 0.72);
-      border: 1px solid rgba(255, 255, 255, 0.72);
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-      backdrop-filter: blur(18px);
-    }
-
-    .floating-fab {
-      position: fixed;
-      bottom: 22px;
-      left: 22px;
-      width: 56px;
-      height: 56px;
-      border-radius: 18px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, #2563eb, #0ea5e9);
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.55);
-      box-shadow: 0 16px 36px rgba(37, 99, 235, 0.2);
-      z-index: 1200;
-      cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .floating-fab:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 20px 44px rgba(37, 99, 235, 0.28);
-    }
-
-    .badge-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(37, 99, 235, 0.1);
-      color: #075985;
-      font-weight: 800;
-      font-size: 12px;
-    }
   </style>
 </head>
 
@@ -1691,11 +1630,9 @@
     /* Permissions matrix */
     const ROLES = {
       super_admin: { label: 'مدير عام', color: '#ef4444', pages: '*' },
-      sales: { label: 'مندوب مبيعات', color: '#10b981', pages: ['dashboard', 'pos', 'customers', 'orders', 'products', 'ai-studio', 'analytics', 'seller-hub'] },
-      ops: { label: 'تشغيل ومخازن', color: '#f59e0b', pages: ['dashboard', 'orders', 'products', 'shipments', 'warehouses', 'shipping-calc', 'barcode', 'erp-dashboard'] },
-      customer: { label: 'عميل', color: '#6366f1', pages: ['shop', 'my-orders', 'cart'] },
-      cashier: { label: 'كاشير', color: '#0284c7', pages: ['pos', 'orders', 'cart', 'my-orders'] },
-      warehouse: { label: 'مخزن', color: '#8b5cf6', pages: ['dashboard', 'products', 'warehouses', 'shipments', 'shipping-calc'] }
+      sales: { label: 'مندوب مبيعات', color: '#10b981', pages: ['dashboard', 'pos', 'customers', 'orders', 'products'] },
+      ops: { label: 'تشغيل ومخازن', color: '#f59e0b', pages: ['dashboard', 'orders', 'products', 'shipments', 'warehouses'] },
+      customer: { label: 'عميل', color: '#6366f1', pages: ['shop', 'my-orders', 'cart'] }
     };
 
     const GOVS = ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'الشرقية', 'القليوبية', 'كفر الشيخ', 'الغربية', 'المنوفية', 'البحيرة', 'الإسماعيلية', 'بورسعيد', 'السويس', 'دمياط', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'الوادي الجديد', 'مطروح', 'شمال سيناء', 'جنوب سيناء'];
@@ -1755,9 +1692,7 @@
           { id: 'u1', name: 'طارق', email: 'tarek@sedy.com', pass: '123456', role: 'super_admin' },
           { id: 'u2', name: 'محمود علي', email: 'sales@erp.com', pass: 'sales', role: 'sales', commission: 0 },
           { id: 'u3', name: 'سارة حسن', email: 'ops@erp.com', pass: 'ops', role: 'ops' },
-          { id: 'u4', name: 'عميل تجريبي', email: 'customer@erp.com', pass: 'customer', role: 'customer' },
-          { id: 'u5', name: 'عمار الكاشير', email: 'cashier@erp.com', pass: 'cashier', role: 'cashier' },
-          { id: 'u6', name: 'أميرة المخزن', email: 'warehouse@erp.com', pass: 'warehouse', role: 'warehouse' }
+          { id: 'u4', name: 'عميل تجريبي', email: 'customer@erp.com', pass: 'customer', role: 'customer' }
         ],
         categories: [
           { id: 'c1', name: 'إلكترونيات' }, { id: 'c2', name: 'ملابس' }, { id: 'c3', name: 'منزل ومطبخ' }, { id: 'c4', name: 'مستحضرات تجميل' }
@@ -1868,10 +1803,8 @@
         // 3. المدير العام (super_admin) يرى كل شيء دائماً
         if (State.user.role === 'super_admin') return true;
 
-        // 4. باقي المستخدمين: حسب الصفحات المحددة لهم أو حسب الدور الوظيفي
-        const pages = State.user.allowedPages || ROLES[State.user.role]?.pages || [];
-        if (pages === '*') return true;
-        return Array.isArray(pages) && pages.includes(page);
+        // 4. باقي المستخدمين: حسب الصفحات المحددة لهم
+        return State.user.allowedPages && State.user.allowedPages.includes(page);
       }
     };
     function log(user, action) {
@@ -1902,7 +1835,6 @@
       {
         group: 'الرئيسية', items: [
           { id: 'dashboard', label: 'لوحة التحكم', ico: '📊', roles: ['super_admin', 'sales', 'ops'] },
-          { id: 'erp-dashboard', label: 'لوحة ERP', ico: '🏢', roles: ['super_admin', 'ops'] },
           { id: 'shop', label: 'المتجر', ico: '🛍️', roles: ['customer', 'super_admin'] },
           { id: 'cart', label: 'السلة', ico: '🛒', roles: ['customer'] },
           { id: 'my-orders', label: 'طلباتي', ico: '📦', roles: ['customer'] },
@@ -2235,9 +2167,7 @@
             <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500"><i data-lucide="${State.theme === 'dark' ? 'sun' : 'moon'}" class="w-5 h-5"></i></button>
         </div>
       </header>
-      <button class="floating-fab" onclick="quickAction()" title="إجراء سريع">
-        <i data-lucide="sparkles" class="w-5 h-5"></i>
-      </button>
+      
       <!-- منطقة الصفحات -->
       <div id="page" class="p-4 lg:p-8"></div>
     </div>
@@ -2328,12 +2258,11 @@
       if (!el) return;
 
       const pages = {
-        dashboard: Dashboard, 'erp-dashboard': ERPDashboard, pos: POS, orders: Orders, products: Products, categories: Categories,
+        dashboard: Dashboard, pos: POS, orders: Orders, products: Products, categories: Categories,
         customers: Customers, coupons: Coupons, warehouses: Warehouses, barcode: Barcode,
         shipments: Shipments, 'shipping-calc': ShippingCalc, 'shipping-companies': ShippingCompanies,
         finance: Finance, expenses: Expenses,
         suppliers: Suppliers, commissions: Commissions, whatsapp: WhatsApp, analytics: Analytics,
-        'ai-studio': AIStudio, 'seller-hub': SellerHub,
         users: Users, logs: Logs, settings: Settings, shop: Shop, cart: Cart, 'my-orders': MyOrders
       };
 
@@ -2457,103 +2386,6 @@
     function kpi(ic, label, value, delta, dir, bg) { return `<div class="kpi"><div class="ic" style="background:${bg}">${ic}</div><div style="flex:1"><div class="label">${label}</div><div class="value">${value}</div><div class="delta ${dir}">${delta} عن الشهر السابق</div></div></div>` }
     function statusAr(s) { return { pending: 'قيد الانتظار', processing: 'قيد المعالجة', packed: 'تم التغليف', shipped: 'تم الشحن', delivered: 'تم التسليم', returned: 'مرتجع', cancelled: 'ملغي' }[s] || s }
 
-    function generateProductDescription(name, type = 'full') {
-      const title = (name || '').trim();
-      if (!title) return '';
-      const shortText = `باركود ${title} - منتج مميز بجودة عالية وسعر تنافسي.`;
-      const fullText = `منتج ${title} يتميز بتصميم حديث وجودة موثوقة، مناسب للاستخدام اليومي ومصمم لتلبية احتياجات العملاء. يوفر قيمة ممتازة مقابل السعر ويأتي بتفاصيل دقيقة تجعله خيارًا ممتازًا للتسوق.`;
-      return type === 'short' ? shortText : fullText;
-    }
-
-    function ERPDashboard() {
-      const visibleOrders = getVisibleOrders();
-      const totalSales = visibleOrders.reduce((sum, o) => sum + o.total, 0);
-      const weeklySales = Array.from({ length: 7 }, (_, idx) => {
-        const day = new Date(Date.now() - ((6 - idx) * 86400000));
-        return visibleOrders.filter(o => new Date(o.date).toDateString() === day.toDateString()).reduce((s, o) => s + o.total, 0);
-      });
-      const netStock = State.data.products.reduce((sum, p) => sum + (p.stock || 0), 0);
-      const lowStock = State.data.products.filter(p => p.stock <= p.minStock).length;
-      const fastMoving = State.data.products.slice().sort((a, b) => (b.velocity || 0) - (a.velocity || 0)).slice(0, 3);
-
-      return `
-  <div class="grid cols-2 mb-8">
-    <div class="card glass-card">
-      <h3>ملخص العمليات</h3>
-      <div class="grid cols-3 gap-4 mt-6">
-        <div class="card glass-card"> <div class="text-[13px] text-slate-500">إجمالي المبيعات</div><div class="text-3xl font-black mt-2">${money(totalSales)}</div></div>
-        <div class="card glass-card"> <div class="text-[13px] text-slate-500">المخزون الكلي</div><div class="text-3xl font-black mt-2">${netStock}</div></div>
-        <div class="card glass-card"> <div class="text-[13px] text-slate-500">تنبيهات المخزون</div><div class="text-3xl font-black mt-2">${lowStock}</div></div>
-      </div>
-    </div>
-    <div class="card glass-card">
-      <h3>توصيات ذكية</h3>
-      <ul class="space-y-3 mt-6">
-        <li class="badge-pill">🔍 زِد كمية الطلب على المنتجات ذات الطلب المرتفع مثل ${fastMoving.map(p => p.name).join('، ')}.</li>
-        <li class="badge-pill">📈 راقب العائد اليومي وقلل العروض على المنتجات ذات المخزون المحدود.</li>
-        <li class="badge-pill">🚚 استخدم شركات الشحن الأسرع للطلبات الثقيلة لتقليل تأخيرات التسليم.</li>
-      </ul>
-    </div>
-  </div>
-  <div class="grid cols-2 mb-8">
-    <div class="card"><h3>مبيعات الأسبوع</h3><canvas id="erpCh1" height="180"></canvas></div>
-    <div class="card"><h3>توزيع المنتجات حسب الطلب</h3><canvas id="erpCh2" height="180"></canvas></div>
-  </div>`;
-    }
-    ERPDashboard.after = () => {
-      const visibleOrders = getVisibleOrders();
-      const weekLabels = Array.from({ length: 7 }, (_, idx) => {
-        const d = new Date(Date.now() - ((6 - idx) * 86400000));
-        return d.toLocaleDateString('ar-EG', { weekday: 'short' });
-      });
-      const weekTotals = Array.from({ length: 7 }, (_, idx) => {
-        const d = new Date(Date.now() - ((6 - idx) * 86400000));
-        return visibleOrders.filter(o => new Date(o.date).toDateString() === d.toDateString()).reduce((s, o) => s + o.total, 0);
-      });
-      const products = State.data.products.slice().sort((a, b) => (b.velocity || 0) - (a.velocity || 0)).slice(0, 5);
-
-      const ctx1 = document.getElementById('erpCh1');
-      if (ctx1) {
-        new Chart(ctx1, { type: 'line', data: { labels: weekLabels, datasets: [{ label: 'المبيعات', data: weekTotals, borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.16)', fill: true, tension: 0.35 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
-      }
-      const ctx2 = document.getElementById('erpCh2');
-      if (ctx2) {
-        new Chart(ctx2, { type: 'bar', data: { labels: products.map(p => p.name), datasets: [{ data: products.map(p => p.velocity || 0), backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { font: { size: 11 } } }, y: { beginAtZero: true } } } });
-      }
-    };
-
-    function AIStudio() {
-      return `
-  <div class="grid cols-2 gap-6 mb-8">
-    <div class="card glass-card">
-      <div class="flex between items-center mb-4"><h3>استوديو الذكاء الاصطناعي</h3><span class="badge-pill">AI</span></div>
-      <p class="muted">تحليل المبيعات الذكي، وصف المنتجات، وترشيحات المخزون.</p>
-      <div class="grid cols-3 gap-4 mt-6">
-        <div class="card glass-card"><div class="text-[12px] text-slate-500">الاتجاهات الصاعدة</div><div class="text-2xl font-black mt-2">الموضة والأجهزة</div></div>
-        <div class="card glass-card"><div class="text-[12px] text-slate-500">الفرص</div><div class="text-2xl font-black mt-2">زيادة العروض 18%</div></div>
-        <div class="card glass-card"><div class="text-[12px] text-slate-500">التوصية</div><div class="text-2xl font-black mt-2">شحن أسرع للطلبات الثقيلة</div></div>
-      </div>
-    </div>
-    <div class="card">
-      <h3>توليد وصف منتج ذكي</h3>
-      <p class="muted">اكتب اسم المنتج واضغط على زر التوليد للحصول على وصف مختصر وعام تلقائياً.</p>
-      <div class="mt-6 space-y-4">
-        <input id="aiProductName" placeholder="اكتب اسم المنتج هنا" class="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 font-bold" />
-        <button class="btn primary w-full" onclick="const name = document.getElementById('aiProductName').value.trim(); if(name){document.getElementById('aiOutput').textContent = generateProductDescription(name, 'full'); document.getElementById('aiShortOutput').textContent = generateProductDescription(name, 'short');}">توليد الوصف الذكي</button>
-        <div class="bg-slate-50 rounded-3xl p-4 border border-slate-100">
-          <div class="text-[11px] font-black text-slate-500 uppercase mb-2">الوصف المختصر</div>
-          <div id="aiShortOutput" class="text-slate-700 text-sm">سيظهر هنا الوصف المختصر.</div>
-        </div>
-        <div class="bg-slate-50 rounded-3xl p-4 border border-slate-100">
-          <div class="text-[11px] font-black text-slate-500 uppercase mb-2">الوصف العام</div>
-          <div id="aiOutput" class="text-slate-700 text-sm">سيظهر هنا الوصف العام.</div>
-        </div>
-      </div>
-    </div>
-  </div>`;
-    }
-
-    
     /* ===========================================================
        12. PRODUCTS
     =========================================================== */
@@ -2913,10 +2745,7 @@
         <!-- جديد: الوصف المختصر (للملصقات والباركود) -->
         <div class="space-y-1">
           <label class="text-[10px] font-black text-blue-500 uppercase mr-2 italic">الوصف المختصر (يظهر في ملصق الباركود)</label>
-          <div class="flex gap-3 flex-col lg:flex-row">
-            <input name="shortDesc" value="${p.shortDesc || ''}" placeholder="مثال: قطن 100% - مقاس L - لون أزرق" class="flex-1 w-full bg-blue-50/30 border border-blue-100 rounded-2xl p-4 font-bold text-sm focus:ring-2 focus:ring-blue-200">
-            <button type="button" onclick="generateAndFillProductDescription()" class="btn sm primary">توليد الوصف الذكي</button>
-          </div>
+          <input name="shortDesc" value="${p.shortDesc || ''}" placeholder="مثال: قطن 100% - مقاس L - لون أزرق" class="w-full bg-blue-50/30 border border-blue-100 rounded-2xl p-4 font-bold text-sm focus:ring-2 focus:ring-blue-200">
         </div>
 
         <!-- الصف الثاني: التصنيف والإيموجي والوزن -->
@@ -3005,21 +2834,6 @@
       if (typeof lucide !== 'undefined') lucide.createIcons();
       refreshModalImgList();
 
-      window.generateAndFillProductDescription = () => {
-        const form = document.getElementById('prodForm');
-        if (!form) return;
-        const name = form.querySelector('[name=name]')?.value || '';
-        if (!name.trim()) {
-          toast('يرجى إدخال اسم المنتج أولاً', 'warning');
-          return;
-        }
-        const shortDesc = generateProductDescription(name, 'short');
-        const fullDesc = generateProductDescription(name, 'full');
-        form.querySelector('[name=shortDesc]').value = shortDesc;
-        form.querySelector('[name=fullDesc]').value = fullDesc;
-        toast('تم توليد الوصف الذكي تلقائياً', 'success');
-      };
-
       // وظيفة حساب الربح اللحظي
       window.calcLiveProfit = () => {
         const cost = parseFloat(document.getElementById('f_cost').value) || 0;
@@ -3042,13 +2856,6 @@
           images: window._prodImgs,
           velocity: p.velocity || 1
         };
-
-        if (!finalData.shortDesc) {
-          finalData.shortDesc = generateProductDescription(finalData.name, 'short');
-        }
-        if (!finalData.fullDesc) {
-          finalData.fullDesc = generateProductDescription(finalData.name, 'full');
-        }
 
         if (id) {
           Object.assign(p, finalData);
@@ -4554,12 +4361,7 @@ body { display: flex; justify-content: center; align-items: flex-start; }
   </div>`;
     }
     function Analytics() {
-      return `<div class="grid cols-3 gap-4 mb-6">
-    <div class="card glass-card"><div class="badge-pill">توقعات المبيعات</div><div class="text-xl font-black mt-3">زيادة 14% خلال الأسبوع المقبل</div></div>
-    <div class="card glass-card"><div class="badge-pill">ترشيحات المخزون</div><div class="text-xl font-black mt-3">زيادة كمية ${State.data.products.filter(p => p.stock <= p.minStock).slice(0,1).map(p => p.name).join('') || 'المنتجات المنخفضة'} </div></div>
-    <div class="card glass-card"><div class="badge-pill">أداء المنتجات</div><div class="text-xl font-black mt-3">${State.data.products.slice().sort((a,b)=> (b.velocity||0)-(a.velocity||0)).slice(0,1).map(p=>p.name).join('') || 'لا يوجد بيانات'}</div></div>
-  </div>
-  <div class="grid cols-2 mb">
+      return `<div class="grid cols-2 mb">
     <div class="card"><h3>نمو المبيعات</h3><canvas id="aCh1" height="120"></canvas></div>
     <div class="card"><h3>أكثر المنتجات مبيعاً</h3><canvas id="aCh2" height="120"></canvas></div>
   </div>
@@ -5263,52 +5065,58 @@ ${State.data.users.map(u => {
     };
 
     // PWA Service Worker Registration
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then((registration) => {
-            console.log('Service Worker registered successfully:', registration.scope);
+    async function registerServiceWorker() {
+      if (!('serviceWorker' in navigator)) return;
 
-            // Handle updates
-            registration.addEventListener('updatefound', () => {
-              const newWorker = registration.installing;
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // New version available
-                  toast('تم تحديث التطبيق! أعد تحميل الصفحة للحصول على أحدث التحديثات', 'info');
-                }
-              });
-            });
-          })
-          .catch((error) => {
-            console.error('Service Worker registration failed:', error);
+      try {
+        const registration = await navigator.serviceWorker.register('./sw.js');
+        console.log('Service Worker registered successfully:', registration.scope);
+
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              toast('تم تحديث التطبيق! أعد تحميل الصفحة للحصول على أحدث التحديثات', 'info');
+            }
           });
-      });
+        });
+      } catch (error) {
+        console.error('Service Worker registration failed:', error);
+      }
     }
+
+    registerServiceWorker();
 
     // PWA Install Prompt
     let deferredPrompt;
     const installButton = document.createElement('button');
     installButton.id = 'pwa-install-btn';
-    installButton.className = 'fixed bottom-4 left-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 hidden';
+    installButton.className = 'fixed bottom-4 left-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+    installButton.style.display = 'block';
     installButton.textContent = 'تثبيت التطبيق';
     document.body.appendChild(installButton);
+
+    installButton.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const choiceResult = await deferredPrompt.userChoice;
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+          toast('شكرًا! التطبيق جاهز للتثبيت.', 'success');
+        } else {
+          toast('تم رفض التثبيت أو لم يتم الاختيار.', 'info');
+        }
+        deferredPrompt = null;
+      } else {
+        toast('التثبيت غير متاح الآن. أعد تحميل الصفحة أو افتحها في Chrome/Edge المدعوم.', 'warning');
+      }
+    });
 
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
       installButton.style.display = 'block';
-
-      installButton.addEventListener('click', () => {
-        installButton.style.display = 'none';
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-          if (choiceResult.outcome === 'accepted') {
-            console.log('User accepted the install prompt');
-          }
-          deferredPrompt = null;
-        });
-      });
     });
 
     // Hide install button when app is installed

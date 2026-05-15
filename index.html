@@ -1614,8 +1614,12 @@
       }
     }
 
-    // نظام الرابط الخاص بكل موظف - متجر عام للعملاء
-    const storeLink = urlParams.get('store');
+    // نظام الرابط الخاص بكل موظف - رابط على الشكل /store/<slug> أو ?store=<slug> (للتوافق)
+    // افحص المسار أولاً
+    const pathMatch = window.location.pathname.match(/\/store\/([^\/]+)/);
+    let foundStore = null;
+    if (pathMatch) foundStore = pathMatch[1];
+    const storeLink = urlParams.get('store') || foundStore;
     if (storeLink && !State.storeMode) {
       const employee = State.data.users.find(u => u.storeLink === storeLink);
       if (employee) {
@@ -1623,6 +1627,7 @@
         State.storeEmployeeId = employee.id;
         State.page = 'shop';
         sessionStorage.setItem('storeLink', storeLink);
+        sessionStorage.setItem('referredSellerId', employee.id);
         console.log(`متجر موظف: ${employee.name}`);
       }
     } else if (!State.storeMode) {
@@ -1632,6 +1637,7 @@
         if (employee) {
           State.storeMode = true;
           State.storeEmployeeId = employee.id;
+          sessionStorage.setItem('referredSellerId', employee.id);
         }
       }
     }
@@ -1661,6 +1667,13 @@
     };
 
     const GOVS = ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'الشرقية', 'القليوبية', 'كفر الشيخ', 'الغربية', 'المنوفية', 'البحيرة', 'الإسماعيلية', 'بورسعيد', 'السويس', 'دمياط', 'الفيوم', 'بني سويف', 'المنيا', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر', 'أسوان', 'البحر الأحمر', 'الوادي الجديد', 'مطروح', 'شمال سيناء', 'جنوب سيناء'];
+
+    const DEPLOYED_HOST = 'https://seedy-seedy.pages.dev';
+    function getAppOrigin() {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      return /^https?:\/\//.test(origin) ? origin : DEPLOYED_HOST;
+    }
+    const APP_ORIGIN = getAppOrigin();
 
     window.posCategory = 'all'; // الفئة الافتراضية للـ POS
 
@@ -1796,15 +1809,31 @@
     /* ===========================================================
        3. DEMO SEED DATA
     =========================================================== */
-    function generateStoreLink(userId) {
-      return userId + '_' + Math.random().toString(36).substring(2, 12);
+    function normalizeSlug(value) {
+      const s = (value || '').toString().toLowerCase().trim();
+      return s
+        .replace(/[^a-z0-9\u0621-\u064A\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/(^-|-$)/g, '');
+    }
+    function generateStoreLink(nameOrId) {
+      const base = normalizeSlug(nameOrId) || uid();
+      let slug = base;
+      let counter = 1;
+      const users = (State.data && Array.isArray(State.data.users)) ? State.data.users : [];
+      while (users.some(u => u.storeLink === slug)) {
+        slug = `${base}-${counter}`;
+        counter += 1;
+      }
+      return slug;
     }
     function seedDemo() {
       State.data = {
         users: [
           { id: 'u1', name: 'طارق', email: 'tarek@sedy.com', pass: '123456', role: 'super_admin' },
-          { id: 'u2', name: 'محمود علي', email: 'sales@erp.com', pass: 'sales', phone: '201012345678', role: 'sales', commission: 0, storeLink: generateStoreLink('u2') },
-          { id: 'u3', name: 'سارة حسن', email: 'ops@erp.com', pass: 'ops', phone: '201098765432', role: 'ops', storeLink: generateStoreLink('u3') },
+          { id: 'u2', name: 'محمود علي', email: 'sales@erp.com', pass: 'sales', phone: '201012345678', role: 'sales', commission: 0, storeLink: generateStoreLink('محمود علي') },
+          { id: 'u3', name: 'سارة حسن', email: 'ops@erp.com', pass: 'ops', phone: '201098765432', role: 'ops', storeLink: generateStoreLink('سارة حسن') },
           { id: 'u4', name: 'عميل تجريبي', email: 'customer@erp.com', pass: 'customer', role: 'customer' }
         ],
         categories: [
@@ -2099,8 +2128,13 @@
     function PublicShell() {
       const cartCount = cart.reduce((s, c) => s + c.qty, 0);
       const cartTotal = cart.reduce((s, c) => s + c.price * c.qty, 0);
-      const refId = sessionStorage.getItem('referredSellerId');
-      const refSeller = State.data.users.find(u => u.id === refId);
+      let refSeller = null;
+      if (State.storeMode && State.storeEmployeeId) {
+        refSeller = State.data.users.find(u => u.id === State.storeEmployeeId);
+      } else {
+        const refId = sessionStorage.getItem('referredSellerId');
+        refSeller = State.data.users.find(u => u.id === refId);
+      }
 
       return `
   <div class="min-h-screen bg-[#f8fafc]" dir="${State.lang === 'ar' ? 'rtl' : 'ltr'}">
@@ -2132,10 +2166,10 @@
                 <i data-lucide="shopping-cart" class="w-5 h-5 text-slate-600"></i>
                 ${cartCount > 0 ? `<span class="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black w-6 h-6 rounded-full flex items-center justify-center border-4 border-[#f8fafc]">${cartCount}</span>` : ''}
             </button>
-            <button onclick="showLoginModal()" class="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-slate-900 text-white rounded-2xl font-black text-xs md:text-xs min-h-[44px] hover:bg-slate-800 shadow-xl shadow-slate-200 transition-all active:scale-90">
-                <i data-lucide="user-circle" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
-                <span class="hidden md:inline">دخول</span>
-            </button>
+            ${State.storeMode ? '' : `<button onclick="showLoginModal()" class="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-slate-900 text-white rounded-2xl font-black text-xs md:text-xs min-h-[44px] hover:bg-slate-800 shadow-xl shadow-slate-200 transition-all active:scale-90">
+              <i data-lucide="user-circle" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+              <span class="hidden md:inline">دخول</span>
+            </button>`}
         </div>
       </div>
     </header>
@@ -2378,6 +2412,12 @@
     function renderPage() {
       const el = document.getElementById('page');
       if (!el) return;
+
+      // عند فتح الرابط الخاص بموظف - قصر الوصول على صفحات المتجر فقط
+      if (State.storeMode) {
+        const allowed = ['shop', 'cart', 'my-orders'];
+        if (!allowed.includes(State.page)) State.page = 'shop';
+      }
 
       const pages = {
         dashboard: Dashboard, pos: POS, orders: Orders, products: Products, categories: Categories,
@@ -4544,8 +4584,8 @@ body { display: flex; justify-content: center; align-items: flex-start; }
         <tbody>
 ${State.data.users.map(u => {
         // توليد الرابط الخاص بالموظف (للدخول) والرابط الخاص بالعملاء (للتسويق)
-        const loginLink = window.location.origin + window.location.pathname + "?auth=" + u.id;
-        const storeLink = u.storeLink ? window.location.origin + window.location.pathname + "?store=" + u.storeLink : null;
+        const loginLink = APP_ORIGIN + "?auth=" + u.id;
+        const storeLink = u.storeLink ? APP_ORIGIN + '/store/' + u.storeLink : null;
         const isEmployee = ['sales', 'ops'].includes(u.role);
 
         return `
@@ -4641,11 +4681,15 @@ ${State.data.users.map(u => {
 
         if (id) {
           Object.assign(u, userData);
+          // إذا أصبح المستخدم موظف مبيعات/عمليات وأصبح بدون رابط المتجر، أنشئ له رابطاً فريداً
+          if (['sales', 'ops'].includes(role) && !u.storeLink) {
+            u.storeLink = generateStoreLink(u.name || u.id);
+          }
         } else {
           const newUser = { id: uid(), ...userData };
           // إذا كان الموظف من نوع مبيعات أو عمليات، أنشئ رابط متجر خاص له
           if (['sales', 'ops'].includes(role)) {
-            newUser.storeLink = generateStoreLink(newUser.id);
+            newUser.storeLink = generateStoreLink(newUser.name || newUser.id);
           }
           State.data.users.push(newUser);
         }
@@ -4659,7 +4703,7 @@ ${State.data.users.map(u => {
 
     function SellerHub() {
       const u = State.user;
-      const myCustomerLink = window.location.origin + window.location.pathname + "?ref=" + u.id;
+      const myCustomerLink = u.storeLink ? APP_ORIGIN + '/store/' + u.storeLink : APP_ORIGIN + '/?ref=' + u.id;
 
       return `
     <div class="space-y-8">
@@ -5052,7 +5096,7 @@ ${State.data.users.map(u => {
     /* أضف هذا الجزء داخل Dashboard أو صفحة مخصصة للبائع */
 
     function renderSellerLinkCard() {
-      const myLink = window.location.origin + window.location.pathname + "?ref=" + State.user.id;
+      const myLink = APP_ORIGIN + '/?ref=' + State.user.id;
       return `
     <div class="bg-blue-50 rounded-[2rem] p-6 border border-blue-100 mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-4">
@@ -5285,7 +5329,7 @@ ${State.data.users.map(u => {
       if (!('serviceWorker' in navigator)) return;
 
       try {
-        const registration = await navigator.serviceWorker.register('./sw.js');
+        const registration = await navigator.serviceWorker.register('/sw.js');
         console.log('Service Worker registered successfully:', registration.scope);
 
         registration.addEventListener('updatefound', () => {

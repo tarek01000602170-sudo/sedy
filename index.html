@@ -2599,6 +2599,7 @@
             <th class="pb-4">التصنيف</th>
             <th class="pb-4">التكلفة</th>
             <th class="pb-4">السعر</th>
+            <th class="pb-4 text-emerald-600 font-black">عمولة التسويق</th>
             <th class="pb-4 text-emerald-600 font-black">الربح</th>
             <th class="pb-4">الوزن</th>
             <th class="pb-4">الحالة</th>
@@ -2671,6 +2672,7 @@
         'sku': '101',
         'التكلفة': 100,
         'السعر': 200,
+        'عمولة التسويق': 10,
         'الوزن': 500,
         'متوفر': 'نعم',
         'وصف مختصر': 'وصف الباركود',
@@ -2694,6 +2696,7 @@
         const cost = parseFloat(p.cost) || 0;
         const price = parseFloat(p.price) || 0;
         const profit = price - cost;
+        const marketingProfit = parseFloat(p.marketingProfit) || 0;
 
         // صورة المنتج
         const hasImage = p.images && p.images.length > 0;
@@ -2729,10 +2732,13 @@
       <!-- 6. السعر -->
       <td class="py-4 font-black text-blue-600 text-sm">${money(price)}</td>
       
-      <!-- 7. الربح (محسوب) -->
+      <!-- 7. عمولة التسويق -->
+      <td class="py-4 font-black text-emerald-600 text-sm">${money(marketingProfit)}</td>
+
+      <!-- 8. الربح (محسوب) -->
       <td class="py-4 font-black text-emerald-600 text-sm">${money(profit)}</td>
       
-      <!-- 8. الوزن -->
+      <!-- 9. الوزن -->
       <td class="py-4 text-xs font-bold text-slate-600">${p.weightGram || 0} ج</td>
       
       <!-- 9. الحالة -->
@@ -2813,6 +2819,7 @@
                 cat: 'c1',
                 cost: parseFloat(find(['التكلفة', 'cost'])) || 0,
                 price: parseFloat(find(['السعر', 'price'])) || 0,
+                marketingProfit: parseFloat(find(['عمولة التسويق', 'marketingProfit', 'Marketing Profit'])) || 0,
                 weightGram: parseFloat(find(['الوزن', 'weight'])) || 0,
                 isAvailable: String(find(['متوفر', 'الحالة']) || '').includes('لا') ? false : true,
                 shortDesc: String(find(['وصف مختصر']) || ''),
@@ -2881,7 +2888,7 @@
     // --- 4. نموذج إضافة/تعديل منتج المطور ---
     function openProductForm(id) {
       const p = id ? State.data.products.find(x => x.id === id) : {
-        name: '', sku: '', cat: 'c1', img: '📦', cost: 0, price: 0, stock: 0, minStock: 10, weightGram: 0, isAvailable: true, images: [], shortDesc: '', fullDesc: ''
+        name: '', sku: '', cat: 'c1', img: '📦', cost: 0, price: 0, stock: 0, minStock: 10, weightGram: 0, marketingProfit: 0, isAvailable: true, images: [], shortDesc: '', fullDesc: ''
       };
 
       window._prodImgs = [...(p.images || [])];
@@ -2944,6 +2951,13 @@
                 <div id="liveProfit" class="text-xl font-black text-emerald-600">${money((p.price || 0) - (p.cost || 0))}</div>
               </div>
             </div>
+        </div>
+
+        <!-- عمولة التسويق لكل قطعة -->
+        <div class="space-y-1">
+          <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">عمولة التسويق لكل قطعة</label>
+          <input name="marketingProfit" type="number" step="0.01" value="${p.marketingProfit || 0}" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-black text-emerald-600">
+          <div class="text-[10px] text-slate-500">سيفيد في حساب أرباح المندوبيين تلقائياً.</div>
         </div>
 
         <!-- المخزون والتوفر -->
@@ -3013,10 +3027,7 @@
           ...fd,
           cost: Number(fd.cost),
           price: Number(fd.price),
-          stock: Number(fd.stock),
-          minStock: Number(fd.minStock),
-          weightGram: Number(fd.weightGram),
-          isAvailable: fd.isAvailable === 'true',
+          marketingProfit: Number(fd.marketingProfit) || 0,
           images: window._prodImgs,
           velocity: p.velocity || 1
         };
@@ -5134,7 +5145,7 @@ ${State.data.users.map(u => {
             customerName: name,
             customerPhone: phone,
             customerAddress: address,
-            items: cart.map(c => ({ pid: c.pid, qty: c.qty, price: c.price })),
+            items: cart.map(c => ({ pid: c.pid, qty: c.qty, price: c.price, marketingProfit: c.marketingProfit || 0 })),
             total: sub + 50,
             status: 'pending',
             trackingNumber: '',

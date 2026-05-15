@@ -1614,48 +1614,45 @@
       }
     }
 
-    // نظام الرابط الخاص بكل موظف - رابط على الشكل /store/<slug> أو ?store=<slug> (للتوافق)
-    // افحص المسار أولاً
-    const pathMatch = window.location.pathname.match(/\/store\/([^\/]+)/);
-    let foundStore = null;
-    if (pathMatch) foundStore = pathMatch[1];
-    const storeLink = urlParams.get('store') || foundStore;
-    if (storeLink && !State.storeMode) {
-      const employee = State.data.users.find(u => u.storeLink === storeLink);
-      if (employee) {
-        State.storeMode = true;
-        State.storeEmployeeId = employee.id;
-        State.page = 'shop';
-        sessionStorage.setItem('storeLink', storeLink);
-        sessionStorage.setItem('referredSellerId', employee.id);
-        console.log(`متجر موظف: ${employee.name}`);
-      }
-    } else if (!State.storeMode) {
-      const savedStoreLink = sessionStorage.getItem('storeLink');
-      if (savedStoreLink) {
-        const employee = State.data.users.find(u => u.storeLink === savedStoreLink);
+    function initializeStoreMode() {
+      const pathMatch = window.location.pathname.match(/\/store\/([^\/]+)/);
+      let foundStore = null;
+      if (pathMatch) foundStore = pathMatch[1];
+      const storeLink = urlParams.get('store') || foundStore;
+
+      if (storeLink) {
+        const employee = State.data.users.find(u => u.storeLink === storeLink);
         if (employee) {
           State.storeMode = true;
           State.storeEmployeeId = employee.id;
+          State.page = 'shop';
+          sessionStorage.setItem('storeLink', storeLink);
           sessionStorage.setItem('referredSellerId', employee.id);
+          console.log(`متجر موظف: ${employee.name}`);
+        }
+      } else {
+        const savedStoreLink = sessionStorage.getItem('storeLink');
+        if (savedStoreLink) {
+          const employee = State.data.users.find(u => u.storeLink === savedStoreLink);
+          if (employee) {
+            State.storeMode = true;
+            State.storeEmployeeId = employee.id;
+            sessionStorage.setItem('referredSellerId', employee.id);
+          }
         }
       }
-    }
 
-    const sellerRef = urlParams.get('ref');
-
-    if (sellerRef) {
-      // حفظ معرف البائع في ذاكرة المتصفح المؤقتة لضمان بقائه حتى لو تنقل العميل في الصفحات
-      sessionStorage.setItem('referredSellerId', sellerRef);
-
-      // محاولة جلب اسم البائع للترحيب بالعميل
-      const sellerObj = State.data.users.find(u => u.id === sellerRef);
-      if (sellerObj) {
-        State.referredSellerName = sellerObj.name;
-        console.log("العميل يتبع الآن للبائع: " + sellerObj.name);
+      const sellerRef = urlParams.get('ref');
+      if (sellerRef) {
+        sessionStorage.setItem('referredSellerId', sellerRef);
+        const sellerObj = State.data.users.find(u => u.id === sellerRef);
+        if (sellerObj) {
+          State.referredSellerName = sellerObj.name;
+          console.log("العميل يتبع الآن للبائع: " + sellerObj.name);
+        }
+      } else {
+        State.referredSellerId = sessionStorage.getItem('referredSellerId');
       }
-    } else {
-      State.referredSellerId = sessionStorage.getItem('referredSellerId');
     }
 
     /* Permissions matrix */
@@ -1744,32 +1741,36 @@
     }
     function getSellerWhatsApp(order = {}) {
       const settings = State.data.settings || {};
-      let number = order.whatsappNumber || '';
-      
-      // في حالة وجود معرف موظف في الطلب، استخدم رقم هاتفه
-      if (order.salesmanId && !number) {
+      let number = '';
+      const isOnlineOrder = !order.salesmanId || order.salesmanId === 'online' || order.salesmanId === 'system';
+
+      if (!isOnlineOrder) {
         const salesman = State.data.users.find(u => u.id === order.salesmanId);
         if (salesman && salesman.phone) {
           number = salesman.phone;
+        } else if (order.sellerPhone) {
+          number = order.sellerPhone;
+        } else {
+          return '';
         }
+      } else {
+        number = order.whatsappNumber || settings.whatsappNumber || '';
       }
-      
-      // إذا لم نجد رقم، استخدم رقم الإعدادات العام
-      if (!number) {
-        number = settings.whatsappNumber || '';
-      }
-      
+
       return normalizeWhatsAppNumber(number);
     }
     function buildOrderWhatsAppMessage(order, customer) {
+      const sellerName = order.sellerName || (State.data.users.find(u => u.id === order.salesmanId)?.name) || 'أونلاين مباشر';
       const lines = [
         `طلب جديد: ${order.code}`,
+        `اسم البائع: ${sellerName}`,
         `اسم العميل: ${customer?.name || order.customerName || 'غير معروف'}`,
         `رقم الهاتف: ${customer?.phone || order.customerPhone || 'غير متوفر'}`,
         `العنوان: ${order.address || customer?.address || 'غير محدد'}`,
         '',
         'المنتجات:'
       ];
+      if (order.sellerPhone) lines.push(`رقم بائع الواتساب: ${order.sellerPhone}`);
       order.items.forEach(item => {
         const p = State.data.products.find(x => x.id === item.pid) || {};
         lines.push(`- ${p.name || item.name || 'منتج'} × ${item.qty} = ${money(item.qty * item.price)}`);
@@ -3326,21 +3327,18 @@
         shipping: ship,
         date: now(),
         sellerName: salesman ? salesman.name : 'متجر أونلاين',
+        sellerPhone: salesman ? salesman.phone || '' : '',
         salesmanId: salesmanId,
         paid: depositValue,
         remaining: grandTotal - depositValue
       };
-
-      cart.forEach(item => {
-        const p = State.data.products.find(x => x.id === item.pid);
-        if (p) p.stock -= item.qty;
-      });
 
       const whatsappPrepare = State.data.settings?.whatsappAutoSend ? prepareOrderWhatsApp(order, cu) : { popup: null, url: null };
       State.data.orders.unshift(order);
       notifyOrderEvent(order, `طلب جديد تم تسجيله: ${order.code}`);
       cart = [];
       await Store.save();
+      closeModal();
 
       if (whatsappPrepare.popup && whatsappPrepare.url) {
         whatsappPrepare.popup.location = whatsappPrepare.url;
@@ -5070,6 +5068,7 @@ ${State.data.users.map(u => {
             date: now(),
             salesmanId: salesmanId,
             sellerName: salesman ? salesman.name : 'متجر أونلاين مباشر',
+            sellerPhone: salesman ? salesman.phone || '' : '',
             paid: 0,
             remaining: sub + 50
           };
@@ -5168,6 +5167,7 @@ ${State.data.users.map(u => {
     // بدلاً من السطر القديم، استخدم هذا:
     Store.load().then(() => {
       Auth.restore();
+      initializeStoreMode();
       render();
     });
 

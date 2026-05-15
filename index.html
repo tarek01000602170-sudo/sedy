@@ -3370,7 +3370,7 @@
       </div>
       <div class="relative flex-1 max-w-md">
          <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
-         <input placeholder="بحث في الطلبات..." oninput="filterOrders(this.value)" 
+         <input placeholder="بحث برقم الطلب أو الهاتف أو رقم التتبع..." oninput="filterOrders(this.value)" 
                 class="w-full bg-slate-50 border-none rounded-2xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-100">
       </div>
     </div>
@@ -3432,16 +3432,22 @@
       <td class="py-4 px-2 text-[11px] text-slate-400 font-bold">${dateStr(o.date)}</td>
       <td class="py-4 px-2 text-end">
         <div class="flex justify-end gap-2 flex-wrap">
-            <button onclick="viewOrder('${o.id}')" class="px-3 py-1.5 bg-white border border-slate-100 text-slate-600 font-bold rounded-xl shadow-sm hover:bg-slate-50 transition-all text-xs">عرض</button>
-            <button onclick="sendOrderWhatsAppById('${o.id}')" class="px-3 py-1.5 bg-emerald-600 text-white font-bold rounded-xl shadow-sm hover:bg-emerald-700 transition-all text-xs">واتساب</button>
+            <button type="button" onclick="viewOrder('${o.id}')" class="px-3 py-1.5 bg-white border border-slate-100 text-slate-600 font-bold rounded-xl shadow-sm hover:bg-slate-50 transition-all text-xs">عرض</button>
+            <button type="button" onclick="sendOrderWhatsAppById('${o.id}')" class="px-3 py-1.5 bg-emerald-600 text-white font-bold rounded-xl shadow-sm hover:bg-emerald-700 transition-all text-xs">واتساب</button>
+            <button type="button" onclick="deleteOrder('${o.id}')" class="px-3 py-1.5 bg-red-600 text-white font-bold rounded-xl shadow-sm hover:bg-red-700 transition-all text-xs">حذف</button>
         </div>
       </td>
     </tr>`;
       }).join('') || `<tr><td colspan="8" class="py-20 text-center text-slate-300 font-bold italic">لا توجد طلبات مسجلة</td></tr>`;
     }
     function filterOrders(q) {
-      q = q.toLowerCase();
-      document.getElementById('ordBody').innerHTML = orderRows(getVisibleOrders().filter(o => o.code.toLowerCase().includes(q)));
+      q = (q || '').toLowerCase();
+      document.getElementById('ordBody').innerHTML = orderRows(getVisibleOrders().filter(o => {
+        const customer = State.data.customers.find(x => x.id === o.customerId) || {};
+        return [o.code, o.id, o.customerPhone, o.trackingNumber, customer.phone, customer.name]
+          .filter(Boolean)
+          .some(value => value.toString().toLowerCase().includes(q));
+      }));
     }
     function filterOrdersStatus(s) {
       document.getElementById('ordBody').innerHTML = orderRows(s ? getVisibleOrders().filter(o => o.status === s) : getVisibleOrders());
@@ -3473,6 +3479,15 @@
       if (!o) return;
       o.trackingNumber = tracking.trim();
       Store.save();
+      render();
+    }
+    function deleteOrder(id) {
+      const o = State.data.orders.find(x => x.id === id);
+      if (!o) return;
+      if (!confirm(`هل أنت متأكد من حذف الطلب ${o.code} نهائياً؟`)) return;
+      State.data.orders = State.data.orders.filter(x => x.id !== id);
+      Store.save();
+      toast(`تم حذف الطلب ${o.code}`, 'success');
       render();
     }
     async function scanOrderTracking(id) {

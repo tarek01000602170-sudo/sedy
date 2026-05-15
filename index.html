@@ -1778,6 +1778,7 @@
       lines.push('', `الإجمالي النهائي: ${money(order.total)}`);
       if (order.paid) lines.push(`المدفوع: ${money(order.paid)}`);
       if (order.remaining > 0) lines.push(`المتبقي: ${money(order.remaining)}`);
+      if (order.trackingNumber) lines.push(`رقم التتبع: ${order.trackingNumber}`);
       lines.push('', `الحالة: ${statusAr(order.status)}`);
       return lines.join('\n');
     }
@@ -2547,7 +2548,7 @@
     };
 
     function kpi(ic, label, value, delta, dir, bg) { return `<div class="kpi"><div class="ic" style="background:${bg}">${ic}</div><div style="flex:1"><div class="label">${label}</div><div class="value">${value}</div><div class="delta ${dir}">${delta} عن الشهر السابق</div></div></div>` }
-    function statusAr(s) { return { pending: 'قيد الانتظار', processing: 'قيد المعالجة', packed: 'تم التغليف', shipped: 'تم الشحن', delivered: 'تم التسليم', returned: 'مرتجع', cancelled: 'ملغي' }[s] || s }
+    function statusAr(s) { return { pending: 'قيد الانتظار', confirmed: 'تم التأكيد', preparing: 'قيد التحضير', processing: 'قيد المعالجة', packed: 'تم التغليف', shipped: 'تم الشحن', delivered: 'تم التسليم', returned: 'مرتجع', cancelled: 'ملغي' }[s] || s }
 
     /* ===========================================================
        12. PRODUCTS
@@ -3322,6 +3323,7 @@
         items: cart.map(c => ({ pid: c.pid, qty: c.qty, price: c.price })),
         total: grandTotal,
         status: 'pending',
+        trackingNumber: '',
         gov,
         address,
         shipping: ship,
@@ -3363,7 +3365,7 @@
         </button>
         <select onchange="filterOrdersStatus(this.value)" class="bg-slate-50 border-none rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-600 focus:ring-2 focus:ring-blue-100">
           <option value="">كل الحالات</option>
-          ${['pending', 'processing', 'packed', 'shipped', 'delivered', 'returned', 'cancelled'].map(s => `<option value="${s}">${statusAr(s)}</option>`).join('')}
+          ${ORDER_STATUSES.map(s => `<option value="${s}">${statusAr(s)}</option>`).join('')}
         </select>
       </div>
       <div class="relative flex-1 max-w-md">
@@ -3381,6 +3383,7 @@
             <th class="pb-4 text-start">العميل</th>
             <th class="pb-4 text-center">البائع</th>
             <th class="pb-4 text-start">المبلغ</th>
+            <th class="pb-4 text-start">رقم التتبع</th>
             <th class="pb-4 text-center">الحالة</th>
             <th class="pb-4 text-start">التاريخ</th>
             <th class="pb-4 text-end">إجراءات</th>
@@ -3396,52 +3399,45 @@
     function orderRows(list) {
       return list.map(o => {
         const c = State.data.customers.find(x => x.id === o.customerId);
-
-        // محاولة جلب اسم البائع من الطلب نفسه أو البحث عنه في قائمة المستخدمين
         const seller = o.sellerName || (State.data.users.find(u => u.id === o.salesmanId || u.id === o.salesman)?.name) || 'أونلاين';
 
         return `
     <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors group">
-      <!-- 1. كود الطلب -->
       <td class="py-4 px-2 font-black text-slate-800">${o.code}</td>
-      
-      <!-- 2. العميل -->
       <td class="py-4 px-2">
         <div class="font-bold text-slate-700">${c?.name || 'عميل عابر'}</div>
         <div class="text-[10px] text-slate-400">${c?.phone || ''}</div>
       </td>
-      
-      <!-- 3. البائع (هذا هو العمود الذي كان به الخطأ) -->
       <td class="py-4 px-2 text-center">
         <div class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl inline-flex items-center gap-2 border border-blue-100">
             <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
             <span class="text-[11px] font-black italic">${seller}</span>
         </div>
       </td>
-      
-      <!-- 4. المبلغ -->
       <td class="py-4 px-2 font-black text-primary">${money(o.total)}</td>
-      
-      <!-- 5. الحالة -->
-      <td class="py-4 px-2 text-center">
-        <span class="tag ${o.status} px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter shadow-sm">
-            ${statusAr(o.status)}
-        </span>
+      <td class="py-4 px-2">
+        <div class="flex flex-col gap-2">
+          <input id="track-${o.id}" type="text" value="${o.trackingNumber || ''}" placeholder="ادخل رقم التتبع" onchange="updateOrderTracking('${o.id}', this.value)"
+                 class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-100" />
+          <button onclick="scanOrderTracking('${o.id}')" class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 text-white rounded-2xl text-[11px] font-black hover:bg-slate-900 transition-all">
+            <i data-lucide="camera" class="w-4 h-4"></i> مسح باركود
+          </button>
+        </div>
       </td>
-      
-      <!-- 6. التاريخ -->
+      <td class="py-4 px-2 text-center">
+        <select onchange="updateOrderStatus('${o.id}', this.value)" class="bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-100">
+          ${ORDER_STATUSES.map(s => `<option value="${s}" ${o.status === s ? 'selected' : ''}>${statusAr(s)}</option>`).join('')}
+        </select>
+      </td>
       <td class="py-4 px-2 text-[11px] text-slate-400 font-bold">${dateStr(o.date)}</td>
-      
-      <!-- 7. إجراءات -->
       <td class="py-4 px-2 text-end">
-        <div class="flex justify-end gap-2">
+        <div class="flex justify-end gap-2 flex-wrap">
             <button onclick="viewOrder('${o.id}')" class="px-3 py-1.5 bg-white border border-slate-100 text-slate-600 font-bold rounded-xl shadow-sm hover:bg-slate-50 transition-all text-xs">عرض</button>
             <button onclick="sendOrderWhatsAppById('${o.id}')" class="px-3 py-1.5 bg-emerald-600 text-white font-bold rounded-xl shadow-sm hover:bg-emerald-700 transition-all text-xs">واتساب</button>
-            <button onclick="advanceStatus('${o.id}')" class="px-3 py-1.5 bg-slate-800 text-white font-bold rounded-xl shadow-sm hover:bg-slate-900 transition-all text-xs">التالي ←</button>
         </div>
       </td>
     </tr>`;
-      }).join('') || `<tr><td colspan="7" class="py-20 text-center text-slate-300 font-bold italic">لا توجد طلبات مسجلة</td></tr>`;
+      }).join('') || `<tr><td colspan="8" class="py-20 text-center text-slate-300 font-bold italic">لا توجد طلبات مسجلة</td></tr>`;
     }
     function filterOrders(q) {
       q = q.toLowerCase();
@@ -3450,7 +3446,8 @@
     function filterOrdersStatus(s) {
       document.getElementById('ordBody').innerHTML = orderRows(s ? getVisibleOrders().filter(o => o.status === s) : getVisibleOrders());
     }
-    const STATUS_FLOW = ['pending', 'processing', 'packed', 'shipped', 'delivered'];
+    const ORDER_STATUSES = ['pending', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled'];
+    const STATUS_FLOW = ['pending', 'confirmed', 'preparing', 'shipped', 'delivered'];
     function advanceStatus(id) {
       const o = State.data.orders.find(x => x.id === id);
       if (!o) return;
@@ -3462,6 +3459,50 @@
         toast('تم تحديث الحالة', 'success');
         render();
       }
+    }
+    function updateOrderStatus(id, status) {
+      const o = State.data.orders.find(x => x.id === id);
+      if (!o || !ORDER_STATUSES.includes(status)) return;
+      o.status = status;
+      Store.save();
+      notifyOrderEvent(o, `تم تحديث حالة الطلب ${o.code} إلى ${statusAr(status)}`);
+      render();
+    }
+    function updateOrderTracking(id, tracking) {
+      const o = State.data.orders.find(x => x.id === id);
+      if (!o) return;
+      o.trackingNumber = tracking.trim();
+      Store.save();
+      render();
+    }
+    async function scanOrderTracking(id) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.capture = 'environment';
+      input.style.display = 'none';
+      input.onchange = async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        if ('BarcodeDetector' in window) {
+          try {
+            const imgBitmap = await createImageBitmap(file);
+            const detector = new BarcodeDetector({ formats: ['code_128', 'ean_13', 'ean_8', 'qr_code', 'code_39', 'code_93', 'upc_e', 'upc_a'] });
+            const codes = await detector.detect(imgBitmap);
+            if (codes.length) {
+              updateOrderTracking(id, codes[0].rawValue || '');
+              toast('تم قراءة رقم التتبع بنجاح', 'success');
+              return;
+            }
+          } catch (e) {
+            console.warn('Barcode scan failed', e);
+          }
+        }
+        toast('لم يتم التعرف على الباركود. الرجاء إدخال الرقم يدوياً.', 'warning');
+      };
+      document.body.appendChild(input);
+      input.click();
+      input.remove();
     }
     function viewOrder(id) {
       const o = State.data.orders.find(x => x.id === id);
@@ -3490,16 +3531,35 @@
         <span class="tag ${o.status} px-4 py-1 rounded-full text-[10px] font-black uppercase shadow-sm">${statusAr(o.status)}</span>
       </div>
 
-      <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
         <div>
             <label class="text-[10px] font-black text-slate-400 uppercase block mb-1">العميل</label>
             <div class="font-bold text-slate-700 text-sm">${c?.name || 'عميل عابر'}</div>
             <div class="text-[10px] text-slate-400">${o.gov} - ${o.address || ''}</div>
         </div>
-        <div class="text-left">
-            <label class="text-[10px] font-black text-slate-400 uppercase block mb-1">البائع</label>
-            <div class="font-black text-blue-600 text-sm italic">${o.sellerName || '---'}</div>
-            <div class="text-[10px] text-slate-400">${dateStr(o.date)}</div>
+        <div class="space-y-3">
+            <div>
+              <label class="text-[10px] font-black text-slate-400 uppercase block mb-1">البائع</label>
+              <div class="font-black text-blue-600 text-sm italic">${o.sellerName || '---'}</div>
+              <div class="text-[10px] text-slate-400">${dateStr(o.date)}</div>
+            </div>
+            <div class="space-y-2">
+              <label class="text-[10px] font-black text-slate-400 uppercase block mb-1">رقم التتبع</label>
+              <div class="flex gap-2 items-center">
+                <input id="modalTrack-${o.id}" type="text" value="${o.trackingNumber || ''}" placeholder="أدخل رقم التتبع"
+                       onchange="updateOrderTracking('${o.id}', this.value)"
+                       class="flex-1 bg-white border border-slate-200 rounded-2xl px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-100" />
+                <button onclick="scanOrderTracking('${o.id}')" class="inline-flex items-center gap-2 px-3 py-2 bg-slate-800 text-white rounded-2xl text-xs font-black hover:bg-slate-900 transition-all">
+                  <i data-lucide="camera" class="w-4 h-4"></i> مسح
+                </button>
+              </div>
+            </div>
+            <div>
+              <label class="text-[10px] font-black text-slate-400 uppercase block mb-1">الحالة</label>
+              <select onchange="updateOrderStatus('${o.id}', this.value)" class="w-full bg-white border border-slate-200 rounded-2xl px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-100">
+                ${ORDER_STATUSES.map(s => `<option value="${s}" ${o.status === s ? 'selected' : ''}>${statusAr(s)}</option>`).join('')}
+              </select>
+            </div>
         </div>
       </div>
 
@@ -4793,7 +4853,7 @@ ${State.data.users.map(u => {
     <div class="space-y-12">
       <!-- شريط العنوان والبحث للموبايل -->
       <div class="lg:hidden space-y-4">
-        <h3 class="text-3xl font-black text-slate-900 italic">بلاكونتك وحديقتك جنة معانا</h3>
+        <h3 class="text-3xl font-black text-slate-900 italic">Explore.</h3>
         <div class="flex items-center bg-white border border-slate-100 rounded-[1.5rem] px-4 py-3 gap-3 soft-shadow">
             <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
             <input id="shopS_mobile" oninput="document.getElementById('shopS').value=this.value; renderShop()" placeholder="ابحث عن منتج..." class="bg-transparent border-none text-sm w-full focus:ring-0">
@@ -5062,6 +5122,7 @@ ${State.data.users.map(u => {
             items: cart.map(c => ({ pid: c.pid, qty: c.qty, price: c.price })),
             total: sub + 50,
             status: 'pending',
+            trackingNumber: '',
             gov,
             address,
             shipping: 50,

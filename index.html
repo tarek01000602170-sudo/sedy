@@ -17,9 +17,6 @@
 
   <link rel="manifest" href="manifest.json">
 
-  <link rel="manifest"
-    href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22Sedy%20ERP%22%2C%22short_name%22%3A%22Sedy%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%232563eb%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F5609%2F5609352.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
-
   <!-- أضف هذا داخل الـ head -->
   <meta name="apple-mobile-web-app-title" content="Seedy Seedy">
   <!-- تعريف الأيقونة للتثبيت -->
@@ -2068,9 +2065,9 @@
     =========================================================== */
     function LoginView() {
       return `<div class="login-wrap"><div class="login-card">
-    <div class="logo">Talia</div>
+    <div class="logo">ERP</div>
     <h1>نظام الإدارة المتكامل</h1>
-    <p>Talia + Ecommerce + CRM</p>
+    <p>ERP + Ecommerce + CRM</p>
     <form id="loginForm">
       <div class="row mb"><label>البريد الإلكتروني</label><input name="email" value="tarek@sedy.com" required></div>
       <div class="row mb"><label>كلمة المرور</label><input name="pass" type="password" value="123456" required></div>
@@ -4550,7 +4547,7 @@ ${State.data.users.map(u => {
     <div class="space-y-12">
       <!-- شريط العنوان والبحث للموبايل -->
       <div class="lg:hidden space-y-4">
-        <h3 class="text-3xl font-black text-slate-900 italic">بلاكونتك وحديقتك أجمل معانا</h3>
+        <h3 class="text-3xl font-black text-slate-900 italic">Explore.</h3>
         <div class="flex items-center bg-white border border-slate-100 rounded-[1.5rem] px-4 py-3 gap-3 soft-shadow">
             <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
             <input id="shopS_mobile" oninput="document.getElementById('shopS').value=this.value; renderShop()" placeholder="ابحث عن منتج..." class="bg-transparent border-none text-sm w-full focus:ring-0">
@@ -5032,6 +5029,102 @@ ${State.data.users.map(u => {
         cartBadge.style.display = total > 0 ? 'block' : 'none';
       }
     };
+
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('Service Worker registered successfully:', registration.scope);
+
+            // Handle updates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New version available
+                  toast('تم تحديث التطبيق! أعد تحميل الصفحة للحصول على أحدث التحديثات', 'info');
+                }
+              });
+            });
+          })
+          .catch((error) => {
+            console.error('Service Worker registration failed:', error);
+          });
+      });
+    }
+
+    // PWA Install Prompt
+    let deferredPrompt;
+    const installButton = document.createElement('button');
+    installButton.id = 'pwa-install-btn';
+    installButton.className = 'fixed bottom-4 left-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 hidden';
+    installButton.textContent = 'تثبيت التطبيق';
+    document.body.appendChild(installButton);
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installButton.style.display = 'block';
+
+      installButton.addEventListener('click', () => {
+        installButton.style.display = 'none';
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+          }
+          deferredPrompt = null;
+        });
+      });
+    });
+
+    // Hide install button when app is installed
+    window.addEventListener('appinstalled', () => {
+      installButton.style.display = 'none';
+      toast('تم تثبيت التطبيق بنجاح!', 'success');
+    });
+
+    // Push Notifications Setup
+    async function requestNotificationPermission() {
+      if ('Notification' in window && 'serviceWorker' in navigator) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          console.log('Notification permission granted');
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Initialize PWA features
+    async function initPWA() {
+      // Request notification permission on first visit
+      if (!localStorage.getItem('notificationsRequested')) {
+        setTimeout(async () => {
+          const granted = await requestNotificationPermission();
+          if (granted) {
+            localStorage.setItem('notificationsRequested', 'true');
+          }
+        }, 3000); // Wait 3 seconds after page load
+      }
+
+      // Handle online/offline status
+      window.addEventListener('online', () => {
+        toast('تم استعادة الاتصال بالإنترنت', 'success');
+        // Sync any pending data
+        if (typeof Store !== 'undefined' && Store.save) {
+          Store.save();
+        }
+      });
+
+      window.addEventListener('offline', () => {
+        toast('أنت الآن غير متصل بالإنترنت. سيتم حفظ البيانات محلياً', 'warning');
+      });
+    }
+
+    // Call PWA initialization
+    initPWA();
 
   </script>
 </body>

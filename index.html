@@ -2403,9 +2403,29 @@
     function orderProfit(order) {
       return (order.items || []).reduce((sum, item) => {
         const p = State.data.products.find(x => x.id === item.pid);
-        const cost = p ? p.cost || 0 : 0;
-        return sum + ((item.price - cost) * item.qty);
+        const profitPerItem = item.marketingProfit ?? (p ? p.marketingProfit || 0 : 0);
+        return sum + (profitPerItem * item.qty);
       }, 0);
+    }
+
+    function filterOrdersByRange(orders, range) {
+      const nowTime = now();
+      return orders.filter(o => {
+        if (!o || !o.date) return false;
+        const orderTime = new Date(o.date).getTime();
+        if (range === 'today') {
+          const orderDate = new Date(orderTime);
+          const today = new Date(nowTime);
+          return orderDate.toDateString() === today.toDateString();
+        }
+        if (range === 'week') {
+          return orderTime >= nowTime - 7 * 86400000;
+        }
+        if (range === 'month') {
+          return orderTime >= nowTime - 30 * 86400000;
+        }
+        return true;
+      });
     }
 
     /* ===========================================================
@@ -2444,104 +2464,299 @@
     =========================================================== */
     function Dashboard() {
       const visibleOrders = getVisibleOrders();
+      const selectedRange = window.dashboardAnalyticsPeriod || 'all';
+      const filteredOrders = filterOrdersByRange(visibleOrders, selectedRange);
       const totalSales = visibleOrders.reduce((s, o) => s + o.total, 0);
       const today = visibleOrders.filter(o => now() - o.date < 86400000);
       const deliveredOrders = visibleOrders.filter(o => o.status === 'delivered');
       const pendingOrders = visibleOrders.filter(o => ['pending', 'processing', 'packed', 'shipped'].includes(o.status));
       const deliveredProfit = deliveredOrders.reduce((s, o) => s + orderProfit(o), 0);
       const pendingProfit = pendingOrders.reduce((s, o) => s + orderProfit(o), 0);
-      const lowStock = State.data.products.filter(p => p.stock <= p.minStock).length;
+      const lowStockProducts = State.data.products.filter(p => p.stock <= p.minStock);
       const isAdmin = State.user && State.user.role === 'super_admin';
       return `
-  <div class="kpi-grid mb-8">
-    ${kpi('💰', isAdmin ? 'إجمالي المبيعات' : 'إجمالي مبيعاتك', money(totalSales), '+12%', 'up', 'linear-gradient(135deg,#2563eb,#1d4ed8)')}
-    ${kpi('📦', isAdmin ? 'الطلبات اليوم' : 'طلباتك اليوم', fmt(today.length), '+8%', 'up', 'linear-gradient(135deg,#0ea5e9,#0284c7)')}
-    ${kpi('📈', isAdmin ? 'أرباح التسليم' : 'أرباح الطلبات المسلمة', money(deliveredProfit), deliveredProfit >= 0 ? '+18%' : '-4%', deliveredProfit >= 0 ? 'up' : 'down', 'linear-gradient(135deg,#10b981,#059669)')}
-    ${kpi('⏳', isAdmin ? 'أرباح الطلبات المعلقة' : 'أرباح الطلبات قيد الإنجاز', money(pendingProfit), pendingProfit >= 0 ? '+6%' : '-2%', pendingProfit >= 0 ? 'up' : 'down', 'linear-gradient(135deg,#f97316,#ea580c)')}
-  </div>
-  <div class="grid cols-2 mb">
-    <div class="card"><h3>المبيعات خلال 7 أيام</h3><canvas id="ch1" height="120"></canvas></div>
-    <div class="card"><h3>توزيع الطلبات حسب الحالة</h3><canvas id="ch2" height="120"></canvas></div>
-  </div>
-  <div class="grid cols-2">
-    <div class="card">
-      <div class="flex between mb"><h3 style="margin:0">آخر الطلبات</h3><a href="#" onclick="State.page='orders';render()" class="pill">عرض الكل</a></div>
-      <div class="table-wrap"><table><thead><tr><th>الكود</th><th>العميل</th><th>المبلغ</th><th>الحالة</th></tr></thead><tbody>
-      ${visibleOrders.slice(0, 5).map(o => { const c = State.data.customers.find(x => x.id === o.customerId); return `<tr><td><b>${o.code}</b></td><td>${c?.name || '-'}</td><td>${money(o.total)}</td><td><span class="tag ${o.status}">${statusAr(o.status)}</span></td></tr>` }).join('')}
-      </tbody></table></div>
+  <div class="flex flex-col gap-6 mb-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-black text-slate-900">لوحة التحكم</h2>
+        <p class="text-sm text-slate-500">لوحة تحكم الإدارة الرئيسية مع تحليلات الطلبات والمبيعات.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400">الفترة</label>
+        <select onchange="window.dashboardAnalyticsPeriod=this.value;render()" class="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-700 focus:ring-2 focus:ring-blue-100">
+          <option value="today" ${selectedRange === 'today' ? 'selected' : ''}>اليوم</option>
+          <option value="week" ${selectedRange === 'week' ? 'selected' : ''}>هذا الأسبوع</option>
+          <option value="month" ${selectedRange === 'month' ? 'selected' : ''}>هذا الشهر</option>
+          <option value="all" ${selectedRange === 'all' ? 'selected' : ''}>كل الفترة</option>
+        </select>
+      </div>
     </div>
-    <div class="card">
-      <h3>⚠️ تنبيهات المخزون (${lowStock})</h3>
-      ${State.data.products.filter(p => p.stock <= p.minStock).slice(0, 6).map(p => `
-        <div class="flex between" style="padding:10px 0;border-bottom:1px solid var(--border)">
-          <div class="flex"><div style="font-size:24px">${p.img}</div><div><div style="font-weight:700">${p.name}</div><div class="muted" style="font-size:11px">SKU: ${p.sku}</div></div></div>
-          <div class="text-end"><div style="color:var(--danger);font-weight:800">${p.stock}</div><div class="muted" style="font-size:11px">الحد: ${p.minStock}</div></div>
-        </div>`).join('') || '<div class="muted">لا توجد تنبيهات</div>'}
+    <div class="kpi-grid">
+      ${kpi('💰', isAdmin ? 'إجمالي المبيعات' : 'إجمالي مبيعاتك', money(totalSales), '+12%', 'up', 'linear-gradient(135deg,#2563eb,#1d4ed8)')}
+      ${kpi('📦', isAdmin ? 'الطلبات اليوم' : 'طلباتك اليوم', fmt(today.length), '+8%', 'up', 'linear-gradient(135deg,#0ea5e9,#0284c7)')}
+      ${kpi('📈', isAdmin ? 'أرباح التسليم' : 'أرباح الطلبات المسلمة', money(deliveredProfit), deliveredProfit >= 0 ? '+18%' : '-4%', deliveredProfit >= 0 ? 'up' : 'down', 'linear-gradient(135deg,#10b981,#059669)')}
+      ${kpi('⏳', isAdmin ? 'أرباح الطلبات المعلقة' : 'أرباح الطلبات قيد الإنجاز', money(pendingProfit), pendingProfit >= 0 ? '+6%' : '-2%', pendingProfit >= 0 ? 'up' : 'down', 'linear-gradient(135deg,#f97316,#ea580c)')}
     </div>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
+    <div class="card p-6">
+      <h3>أفضل البائعين</h3>
+      <div class="mt-4" style="min-height:280px;"><canvas id="dashboardTopSellers"></canvas></div>
+    </div>
+    <div class="card p-6">
+      <h3>أهم المنتجات المباعة</h3>
+      <div class="mt-4" style="min-height:280px;"><canvas id="dashboardTopProducts"></canvas></div>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-6">
+    <div class="card p-6">
+      <h3>المبيعات خلال الفترة</h3>
+      <div class="mt-4" style="min-height:280px;"><canvas id="dashboardSalesTrend"></canvas></div>
+    </div>
+    <div class="card p-6">
+      <h3>توزيع الطلبات حسب الحالة</h3>
+      <div class="mt-4" style="min-height:280px;"><canvas id="dashboardOrderStatus"></canvas></div>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
+    <div class="card p-6">
+      <h3>تنبيهات المخزون المنخفض</h3>
+      <div class="mt-4 space-y-3">
+        ${lowStockProducts.length ? lowStockProducts.map(p => `
+          <div class="flex between gap-3" style="padding:.75rem;border:1px solid var(--border);border-radius:1rem;">
+            <div>
+              <div class="font-black">${p.name}</div>
+              <div class="muted text-xs">SKU: ${p.sku} • الحد: ${p.minStock}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-red-500 font-black">${p.stock}</div>
+              <div class="text-[11px] text-slate-400">في المخزون</div>
+            </div>
+          </div>`).join('') : '<div class="muted">لا توجد منتجات منخفضة المخزون في الوقت الحالي.</div>'}
+      </div>
+    </div>
+    <div class="card p-6 xl:col-span-2">
+      <h3>أحدث الطلبات</h3>
+      <div class="overflow-x-auto mt-4">
+        <table class="table" style="min-width:860px;">
+          <thead><tr><th>رقم الطلب</th><th>العميل</th><th>الموظف</th><th>الحالة</th><th>الإجمالي</th></tr></thead>
+          <tbody>
+            ${visibleOrders.slice(0, 7).map(o => {
+              const customer = State.data.customers.find(x => x.id === o.customerId);
+              const seller = State.data.users.find(x => x.id === o.salesmanId || x.id === o.salesman);
+              return `<tr>
+                <td><b>${o.code}</b></td>
+                <td>${customer?.name || 'غير معروف'}</td>
+                <td>${seller?.name || 'أونلاين'}</td>
+                <td><span class="tag ${o.status}">${statusAr(o.status)}</span></td>
+                <td>${money(o.total)}</td>
+              </tr>`;
+            }).join('') || '<tr><td colspan="5" class="muted text-center py-8">لا توجد طلبات حديثاً.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="card p-6 mb-6">
+    <h3>أهم المحافظات</h3>
+    <div class="mt-4" style="min-height:320px;"><canvas id="dashboardTopLocations"></canvas></div>
   </div>`;
     }
     Dashboard.after = () => {
       const visibleOrders = getVisibleOrders();
+      const range = window.dashboardAnalyticsPeriod || 'all';
+      const orders = filterOrdersByRange(visibleOrders, range);
       const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: { legend: { labels: { font: { size: 12 } } } },
         scales: {
           y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } },
           x: { grid: { display: false }, ticks: { font: { size: 10 } } }
         }
       };
 
-      const weekLabels = Array.from({ length: 7 }, (_, idx) => {
-        const day = new Date(Date.now() - ((6 - idx) * 86400000));
-        return day.toLocaleDateString('ar-EG', { weekday: 'short' });
-      });
-      const weekTotals = Array.from({ length: 7 }, (_, idx) => {
-        const day = new Date(Date.now() - ((6 - idx) * 86400000));
-        return visibleOrders.filter(o => new Date(o.date).toDateString() === day.toDateString()).reduce((s, o) => s + o.total, 0);
-      });
+      window.DashboardCharts = window.DashboardCharts || {};
+      const destroyChart = (key) => {
+        if (window.DashboardCharts[key]) {
+          window.DashboardCharts[key].destroy();
+          delete window.DashboardCharts[key];
+        }
+      };
 
-      const ctx1 = document.getElementById('ch1');
-      if (ctx1) {
-        ctx1.parentElement.style.height = "250px";
-        new Chart(ctx1, {
-          type: 'line',
+      const sellers = Object.values(orders.reduce((acc, o) => {
+        const sellerId = o.salesmanId || o.salesman || 'online';
+        const sellerName = State.data.users.find(u => u.id === sellerId)?.name || 'أونلاين مباشر';
+        if (!acc[sellerId]) acc[sellerId] = { name: sellerName, total: 0, profit: 0, orders: 0 };
+        acc[sellerId].total += o.total || 0;
+        acc[sellerId].profit += orderProfit(o);
+        acc[sellerId].orders += 1;
+        return acc;
+      }, {})).sort((a, b) => b.total - a.total).slice(0, 6);
+
+      const sellerLabels = sellers.map(s => s.name);
+      const sellerSales = sellers.map(s => s.total);
+      const sellerProfit = sellers.map(s => s.profit);
+      const ctxSellers = document.getElementById('dashboardTopSellers');
+      if (ctxSellers) {
+        destroyChart('dashboardTopSellers');
+        ctxSellers.parentElement.style.height = '320px';
+        window.DashboardCharts.dashboardTopSellers = new Chart(ctxSellers, {
+          type: 'bar',
           data: {
-            labels: weekLabels,
-            datasets: [{
-              data: weekTotals,
-              borderColor: '#2563eb',
-              backgroundColor: 'rgba(37, 99, 235, 0.1)',
-              fill: true,
-              tension: 0.4
-            }]
+            labels: sellerLabels,
+            datasets: [
+              { label: 'إجمالي المبيعات', data: sellerSales, backgroundColor: '#2563eb' },
+              { label: 'إجمالي الأرباح', data: sellerProfit, backgroundColor: '#10b981' }
+            ]
           },
-          options: chartOptions
+          options: { ...chartOptions, plugins: { ...chartOptions.plugins, legend: { position: 'bottom' } } }
         });
       }
 
-      const ctx2 = document.getElementById('ch2');
-      if (ctx2) {
-        ctx2.parentElement.style.height = "250px";
-        new Chart(ctx2, {
+      const products = Object.values(orders.reduce((acc, o) => {
+        (o.items || []).forEach(item => {
+          const product = State.data.products.find(p => p.id === item.pid);
+          const name = product?.name || item.pid;
+          if (!acc[item.pid]) acc[item.pid] = { name, qty: 0, revenue: 0 };
+          acc[item.pid].qty += item.qty || 0;
+          acc[item.pid].revenue += (item.price || 0) * (item.qty || 0);
+        });
+        return acc;
+      }, {})).sort((a, b) => b.qty - a.qty).slice(0, 8);
+
+      const prodLabels = products.map(p => p.name);
+      const prodQty = products.map(p => p.qty);
+      const prodRevenue = products.map(p => p.revenue);
+      const ctxProducts = document.getElementById('dashboardTopProducts');
+      if (ctxProducts) {
+        destroyChart('dashboardTopProducts');
+        ctxProducts.parentElement.style.height = '320px';
+        window.DashboardCharts.dashboardTopProducts = new Chart(ctxProducts, {
+          type: 'bar',
+          data: {
+            labels: prodLabels,
+            datasets: [
+              { label: 'الكمية المباعة', data: prodQty, backgroundColor: '#818cf8' },
+              { label: 'الإيرادات', data: prodRevenue, backgroundColor: '#f59e0b' }
+            ]
+          },
+          options: { ...chartOptions, plugins: { ...chartOptions.plugins, legend: { position: 'bottom' } } }
+        });
+      }
+
+      const salesBuckets = [];
+      const salesLabels = [];
+      const nowDate = new Date();
+      if (range === 'today') {
+        for (let hour = 0; hour < 24; hour += 2) {
+          salesLabels.push(`${hour}:00`);
+          const start = new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate(), hour).getTime();
+          const end = start + 2 * 3600000;
+          salesBuckets.push(orders.filter(o => o.date >= start && o.date < end).reduce((sum, o) => sum + (o.total || 0), 0));
+        }
+      } else if (range === 'week') {
+        for (let i = 6; i >= 0; i--) {
+          const day = new Date(nowDate.getTime() - i * 86400000);
+          const from = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+          const to = from + 86400000;
+          salesLabels.push(day.toLocaleDateString('ar-EG', { weekday: 'short' }));
+          salesBuckets.push(orders.filter(o => o.date >= from && o.date < to).reduce((sum, o) => sum + (o.total || 0), 0));
+        }
+      } else if (range === 'month') {
+        for (let i = 29; i >= 0; i--) {
+          const day = new Date(nowDate.getTime() - i * 86400000);
+          const from = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+          const to = from + 86400000;
+          salesLabels.push(`${day.getDate()}/${day.getMonth() + 1}`);
+          salesBuckets.push(orders.filter(o => o.date >= from && o.date < to).reduce((sum, o) => sum + (o.total || 0), 0));
+        }
+      } else {
+        const months = {};
+        orders.forEach(o => {
+          const d = new Date(o.date);
+          const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+          months[key] = (months[key] || 0) + (o.total || 0);
+        });
+        Object.entries(months).sort(([a], [b]) => new Date(a + '-01') - new Date(b + '-01')).forEach(([key, total]) => {
+          const [year, month] = key.split('-');
+          salesLabels.push(`${month}/${year}`);
+          salesBuckets.push(total);
+        });
+      }
+
+      const ctxSales = document.getElementById('dashboardSalesTrend');
+      if (ctxSales) {
+        destroyChart('dashboardSalesTrend');
+        ctxSales.parentElement.style.height = '320px';
+        window.DashboardCharts.dashboardSalesTrend = new Chart(ctxSales, {
+          type: 'line',
+          data: {
+            labels: salesLabels,
+            datasets: [{
+              label: 'المبيعات',
+              data: salesBuckets,
+              borderColor: '#2563eb',
+              backgroundColor: 'rgba(37,99,235,0.12)',
+              fill: true,
+              tension: 0.35
+            }]
+          },
+          options: { ...chartOptions, plugins: { ...chartOptions.plugins, legend: { position: 'bottom' } } }
+        });
+      }
+
+      const statusCounts = ORDER_STATUSES.reduce((acc, status) => ({ ...acc, [status]: 0 }), {});
+      orders.forEach(o => {
+        const key = o.status || 'pending';
+        if (statusCounts[key] !== undefined) statusCounts[key] += 1;
+      });
+      const statusLabels = Object.entries(statusCounts).filter(([, value]) => value > 0).map(([status]) => statusAr(status));
+      const statusValues = Object.entries(statusCounts).filter(([, value]) => value > 0).map(([, value]) => value);
+      const ctxOrderStatus = document.getElementById('dashboardOrderStatus');
+      if (ctxOrderStatus) {
+        destroyChart('dashboardOrderStatus');
+        ctxOrderStatus.parentElement.style.height = '320px';
+        window.DashboardCharts.dashboardOrderStatus = new Chart(ctxOrderStatus, {
           type: 'doughnut',
           data: {
-            labels: ['تم التسليم', 'قيد الشحن', 'مرتجع'],
-            datasets: [{
-              data: [
-                visibleOrders.filter(o => o.status === 'delivered').length,
-                visibleOrders.filter(o => o.status === 'shipped' || o.status === 'packed' || o.status === 'processing').length,
-                visibleOrders.filter(o => o.status === 'returned').length
-              ],
-              backgroundColor: ['#10b981', '#2563eb', '#ef4444'],
-              borderWidth: 0,
-              hoverOffset: 10
-            }]
+            labels: statusLabels,
+            datasets: [{ data: statusValues, backgroundColor: ['#f59e0b', '#0ea5e9', '#6366f1', '#10b981', '#ef4444', '#64748b'] }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '70%'
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } } }
+          }
+        });
+      }
+
+      const locations = Object.values(orders.reduce((acc, o) => {
+        const location = o.gov || 'غير محدد';
+        if (!acc[location]) acc[location] = { name: location, orders: 0, total: 0 };
+        acc[location].orders += 1;
+        acc[location].total += o.total || 0;
+        return acc;
+      }, {})).sort((a, b) => b.orders - a.orders).slice(0, 8);
+
+      const locationLabels = locations.map(l => l.name);
+      const locationValues = locations.map(l => l.orders);
+      const ctxLocations = document.getElementById('dashboardTopLocations');
+      if (ctxLocations) {
+        destroyChart('dashboardTopLocations');
+        ctxLocations.parentElement.style.height = '320px';
+        window.DashboardCharts.dashboardTopLocations = new Chart(ctxLocations, {
+          type: 'doughnut',
+          data: {
+            labels: locationLabels,
+            datasets: [{ data: locationValues, backgroundColor: ['#2563eb', '#10b981', '#f97316', '#ec4899', '#8b5cf6', '#14b8a6', '#0ea5e9', '#facc15'] }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } }
+            }
           }
         });
       }
@@ -3242,7 +3457,7 @@
         }
       } else if (delta > 0) {
         // إضافة منتج جديد للسلة
-        cart.push({ pid: p.id, name: p.name, price: p.price, qty: 1 });
+        cart.push({ pid: p.id, name: p.name, price: p.price, qty: 1, marketingProfit: p.marketingProfit || 0 });
         toast(`أضيف ${p.name} للسلة ✅`, 'success');
       }
 
@@ -3254,7 +3469,7 @@
     function addToCart(pid) {
       const p = State.data.products.find(x => x.id === pid);
       const it = cart.find(c => c.pid === pid);
-      if (it) it.qty++; else cart.push({ pid, name: p.name, price: p.price, qty: 1 });
+      if (it) it.qty++; else cart.push({ pid, name: p.name, price: p.price, qty: 1, marketingProfit: p.marketingProfit || 0 });
       renderCart();
     }
     function renderCart() {
@@ -3660,6 +3875,9 @@
         <button onclick="openCustomerForm()" class="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-xl font-black text-xs shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
           <i data-lucide="plus-circle" class="w-4 h-4"></i> عميل جديد
         </button>
+        <button onclick="deleteAllCustomers()" class="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl font-bold text-xs hover:bg-red-100 transition-all">
+          <i data-lucide="trash-2" class="w-4 h-4"></i> حذف الكل
+        </button>
       </div>
     </div>
 
@@ -3713,15 +3931,38 @@
         </span>
       </td>
       <td class="py-4 text-left">
-        <button onclick="openCustomerForm('${c.id}')" class="p-2 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all">
-          <i data-lucide="edit-3" class="w-4 h-4"></i>
-        </button>
+        <div class="flex items-center gap-2 justify-end">
+          <button onclick="openCustomerForm('${c.id}')" class="p-2 bg-white border border-slate-100 rounded-xl shadow-sm text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all">
+            <i data-lucide="edit-3" class="w-4 h-4"></i>
+          </button>
+          <button onclick="deleteCustomer('${c.id}')" class="p-2 bg-white border border-slate-100 rounded-xl shadow-sm text-red-500 hover:text-white hover:bg-red-500 transition-all">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
       </td>
     </tr>`;
       }).join('') || '<tr><td colspan="9" class="py-20 text-center text-slate-300">لا يوجد عملاء مسجلين</td></tr>';
     }
 
     function filterCustomers(q) { q = q.toLowerCase(); document.getElementById('cusBody').innerHTML = cusRows(State.data.customers.filter(c => c.name.toLowerCase().includes(q) || (c.phone || '').includes(q) || (c.phone2 || '').includes(q))); }
+    function deleteCustomer(id) {
+      if (!confirm('هل أنت متأكد من حذف هذا العميل نهائياً؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+      State.data.customers = State.data.customers.filter(c => c.id !== id);
+      Store.save();
+      render();
+      toast('تم حذف العميل بنجاح', 'success');
+    }
+    function deleteAllCustomers() {
+      if (!State.data.customers || State.data.customers.length === 0) {
+        toast('لا يوجد عملاء للحذف', 'info');
+        return;
+      }
+      if (!confirm('تحذير! سيتم حذف جميع العملاء نهائياً. هل ترغب في المتابعة؟')) return;
+      State.data.customers = [];
+      Store.save();
+      render();
+      toast('تم حذف جميع العملاء', 'warning');
+    }
     function openCustomerForm(id) {
       const c = id ? State.data.customers.find(x => x.id === id) : { category: 'جديد', total: 0, points: 0, gov: 'القاهرة' };
       const categories = ['جديد', 'مميز', 'سئ', 'يجب متابعته'];
@@ -4787,53 +5028,78 @@ ${State.data.users.map(u => {
 
     function SellerHub() {
       const u = State.user;
+      const visibleOrders = getVisibleOrders();
+      const totalOrders = visibleOrders.length;
+      const deliveredOrders = visibleOrders.filter(o => o.status === 'delivered');
+      const totalSales = visibleOrders.reduce((s, o) => s + (o.total || 0), 0);
+      const totalSoldItems = visibleOrders.reduce((sum, o) => sum + ((o.items || []).reduce((qty, item) => qty + (item.qty || 0), 0)), 0);
+      const totalProfit = visibleOrders.reduce((s, o) => s + orderProfit(o), 0);
       const myCustomerLink = u.storeLink ? APP_ORIGIN + '/store/' + u.storeLink : APP_ORIGIN + '/?ref=' + u.id;
 
       return `
     <div class="space-y-8">
-        <!-- بطاقة الترحيب والروابط -->
         <div class="bg-white rounded-[2.5rem] p-8 border border-slate-100 soft-shadow relative overflow-hidden">
             <div class="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 rounded-full -mr-32 -mt-32"></div>
-            
             <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h2 class="text-3xl font-black text-slate-900 mb-2">مرحباً، ${u.name} 👋</h2>
-                    <p class="text-slate-500 font-bold text-sm text-blue-600">هذه هي لوحة التحكم الخاصة بك لمتابعة مبيعاتك.</p>
+                    <p class="text-slate-500 font-bold text-sm text-blue-600">هذه لوحة بياناتك الشخصية لمتابعة الطلبات والأرباح.</p>
                 </div>
                 <div class="bg-blue-600 rounded-2xl p-4 text-white shadow-xl shadow-blue-100">
                     <div class="text-[10px] font-black uppercase opacity-60 mb-1">رابط متجرك للعملاء</div>
-                    <div class="flex items-center gap-3">
-                        <code class="text-xs font-mono">${myCustomerLink.substring(0, 30)}...</code>
-                        <button onclick="copyToClipboard('${myCustomerLink}', 'رابط المتجر')" class="bg-white/20 hover:bg-white/40 p-2 rounded-lg transition-all">
-                            <i data-lucide="copy" class="w-4 h-4"></i>
-                        </button>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                        <code class="text-xs font-mono break-all">${myCustomerLink}</code>
+                        <button onclick="copyToClipboard('${myCustomerLink}')" class="bg-white/20 hover:bg-white/40 p-2 rounded-lg transition-all text-xs">نسخ الرابط</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- عرض سريع للصفحات المتاحة له -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div onclick="State.page='shop';render()" class="bg-white p-6 rounded-[2rem] border border-slate-100 soft-shadow hover:scale-105 transition-all cursor-pointer group">
-                <div class="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                    <i data-lucide="shopping-bag"></i>
-                </div>
-                <h4 class="font-black text-slate-800">المتجر الرئيسي</h4>
-                <p class="text-xs text-slate-400 mt-1">ابدأ عملية بيع جديدة الآن</p>
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div class="card p-6">
+            <div class="text-slate-500 text-xs uppercase tracking-[0.2em] mb-3">إجمالي الطلبات</div>
+            <div class="text-3xl font-black">${fmt(totalOrders)}</div>
+          </div>
+          <div class="card p-6">
+            <div class="text-slate-500 text-xs uppercase tracking-[0.2em] mb-3">الطلبات المسلمة</div>
+            <div class="text-3xl font-black">${fmt(deliveredOrders.length)}</div>
+          </div>
+          <div class="card p-6">
+            <div class="text-slate-500 text-xs uppercase tracking-[0.2em] mb-3">إجمالي المبيعات</div>
+            <div class="text-3xl font-black">${money(totalSales)}</div>
+          </div>
+          <div class="card p-6">
+            <div class="text-slate-500 text-xs uppercase tracking-[0.2em] mb-3">إجمالي الأرباح</div>
+            <div class="text-3xl font-black">${money(totalProfit)}</div>
+          </div>
+        </div>
 
-            ${(u.allowedPages || []).map(pId => {
-        const pageInfo = NAV.flatMap(g => g.items).find(i => i.id === pId);
-        if (!pageInfo) return '';
-        return `
-                <div onclick="State.page='${pId}';render()" class="bg-white p-6 rounded-[2rem] border border-slate-100 soft-shadow hover:scale-105 transition-all cursor-pointer group">
-                    <div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-500 group-hover:text-white transition-all">
-                        <i data-lucide="${getIconName(pageInfo.ico)}"></i>
-                    </div>
-                    <h4 class="font-black text-slate-800">${pageInfo.label}</h4>
-                    <p class="text-xs text-slate-400 mt-1">عرض ومتابعة ${pageInfo.label}</p>
-                </div>`;
-      }).join('')}
+        <div class="card p-6">
+          <h3 class="mb-4">أحدث الطلبات الخاصة بك</h3>
+          <div class="overflow-x-auto">
+            <table class="table" style="min-width:760px;">
+              <thead><tr>
+                <th>الكود</th><th>العميل</th><th>المبلغ</th><th>القطع</th><th>الحالة</th>
+              </tr></thead>
+              <tbody>
+                ${visibleOrders.map(o => {
+                  const customer = State.data.customers.find(x => x.id === o.customerId);
+                  const itemsQty = (o.items || []).reduce((qty, item) => qty + (item.qty || 0), 0);
+                  return `<tr>
+                    <td><b>${o.code}</b></td>
+                    <td>${customer?.name || 'عميل غير معروف'}</td>
+                    <td>${money(o.total)}</td>
+                    <td>${fmt(itemsQty)}</td>
+                    <td>
+                      <select onchange="updateOrderStatus('${o.id}', this.value)" class="bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 text-sm text-slate-700 w-full focus:ring-2 focus:ring-blue-100">
+                        ${ORDER_STATUSES.map(s => `<option value="${s}" ${o.status === s ? 'selected' : ''}>${statusAr(s)}</option>`).join('')}
+                      </select>
+                    </td>
+                  </tr>`;
+                }).join('') || '<tr><td colspan="5" class="muted text-center py-8">لا توجد طلبات خاصة بك حتى الآن.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
         </div>
     </div>`;
     }
@@ -4974,11 +5240,16 @@ ${State.data.users.map(u => {
 
             <!-- متحكم الكمية السحابي (Soft UI) -->
             <div class="flex items-center bg-slate-100 p-1.5 rounded-2xl gap-3 border border-slate-200/50">
-                <button onclick="updateAutoCart('${p.id}', -1)" class="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-600 hover:bg-red-50 hover:text-red-500 transition-all active:scale-90">
+                <button onclick="changeShopQty('${p.id}', -1)" class="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-600 hover:bg-red-50 hover:text-red-500 transition-all active:scale-90">
                     <i data-lucide="minus" class="w-4 h-4"></i>
                 </button>
-                <span class="font-black text-slate-800 w-4 text-center text-sm">${currentQty}</span>
-                <button onclick="updateAutoCart('${p.id}', 1)" class="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-blue-100 active:scale-90">
+                <select id="shopQty_${p.id}" onchange="setShopQuantity('${p.id}', this.value)" class="min-w-[70px] bg-white border border-slate-200 rounded-2xl px-3 py-2 text-center font-black text-sm focus:ring-2 focus:ring-blue-100">
+                  ${Array.from({ length: Math.max(1, Math.min(p.stock || 20, 20)) }, (_, i) => {
+                    const qtyVal = i + 1;
+                    return `<option value="${qtyVal}" ${currentQty === qtyVal ? 'selected' : ''}>${qtyVal}</option>`;
+                  }).join('')}
+                </select>
+                <button onclick="changeShopQty('${p.id}', 1)" class="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-blue-100 active:scale-90">
                     <i data-lucide="plus" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -5239,13 +5510,33 @@ ${State.data.users.map(u => {
     };
 
     window.addToCartFromDetail = (pid) => {
-      const qty = parseInt(document.getElementById('detailQty').value || 1);
+      const qtySelect = document.getElementById('detailQty');
+      const maxQty = qtySelect ? parseInt(qtySelect.dataset.max || '1') : 1;
+      let qty = qtySelect ? parseInt(qtySelect.value || '1') : 1;
+      qty = Math.max(1, Math.min(qty, maxQty));
       const p = State.data.products.find(x => x.id === pid);
       const it = cart.find(c => c.pid === pid);
-      if (it) it.qty += qty; else cart.push({ pid, name: p.name, price: p.price, qty });
+      if (it) it.qty += qty; else cart.push({ pid, name: p.name, price: p.price, qty, marketingProfit: p.marketingProfit || 0 });
       closeModal();
       toast('تمت الإضافة للسلة', 'success');
       render(); // لتحديث العداد في الصفحة الرئيسية
+    };
+
+    window.changeDetailQty = (delta) => {
+      const qtySelect = document.getElementById('detailQty');
+      if (!qtySelect) return;
+      const maxQty = parseInt(qtySelect.dataset.max || '1');
+      let qty = parseInt(qtySelect.value || '1');
+      qty = Math.max(1, Math.min(maxQty, qty + delta));
+      qtySelect.value = qty;
+    };
+
+    window.syncDetailQty = (value) => {
+      const qtySelect = document.getElementById('detailQty');
+      if (!qtySelect) return;
+      const maxQty = parseInt(qtySelect.dataset.max || '1');
+      let qty = parseInt(value || '1');
+      qtySelect.value = Math.max(1, Math.min(maxQty, qty));
     };
 
     /* ===========================================================
@@ -5330,7 +5621,17 @@ ${State.data.users.map(u => {
             </div>
         </div>
 
-        <div class="mt-auto pt-6 border-t border-slate-100 flex items-center justify-between">
+        <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] gap-3 items-center mb-4">
+            <button onclick="changeDetailQty(-1)" class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-700 font-black text-xl transition-colors hover:bg-slate-200">−</button>
+            <div class="flex flex-col gap-2">
+              <label class="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">الكمية</label>
+              <select id="detailQty" data-max="${Math.max(1, Math.min(p.stock || 20, 20))}" onchange="syncDetailQty(this.value)" class="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 text-center font-black text-base focus:ring-2 focus:ring-blue-100">
+                ${Array.from({ length: Math.max(1, Math.min(p.stock || 20, 20)) }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('')}
+              </select>
+            </div>
+            <button onclick="changeDetailQty(1)" class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-700 font-black text-xl transition-colors hover:bg-slate-200">+</button>
+        </div>
+        <div class="mt-auto pt-6 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
                 <span class="text-[10px] text-slate-400 font-black block uppercase">السعر النهائي</span>
                 <span class="text-3xl font-black text-blue-600">${money(p.price)}</span>
@@ -5374,10 +5675,13 @@ ${State.data.users.map(u => {
     };
 
     window.addToCartFromDetail = (pid) => {
-      const qty = parseInt(document.getElementById('detailQty').value || 1);
+      const qtySelect = document.getElementById('detailQty');
+      const maxQty = qtySelect ? parseInt(qtySelect.dataset.max || '1') : 1;
+      let qty = qtySelect ? parseInt(qtySelect.value || '1') : 1;
+      qty = Math.max(1, Math.min(qty, maxQty));
       const p = State.data.products.find(x => x.id === pid);
       const it = cart.find(c => c.pid === pid);
-      if (it) it.qty += qty; else cart.push({ pid, name: p.name, price: p.price, qty });
+      if (it) it.qty += qty; else cart.push({ pid, name: p.name, price: p.price, qty, marketingProfit: p.marketingProfit || 0 });
       closeModal();
       toast('تمت الإضافة للسلة ✅', 'success');
       render();
@@ -5395,7 +5699,7 @@ ${State.data.users.map(u => {
           cart = cart.filter(c => c.pid !== pid);
         }
       } else if (delta > 0) {
-        cart.push({ pid: p.id, name: p.name, price: p.price, qty: 1 });
+        cart.push({ pid: p.id, name: p.name, price: p.price, qty: 1, marketingProfit: p.marketingProfit || 0 });
       }
 
       // حفظ وتحديث الواجهة فوراً
@@ -5403,6 +5707,50 @@ ${State.data.users.map(u => {
       renderShop(); // نقوم بتحديث جزء المتجر فقط ليكون أسرع من تحديث التطبيق بالكامل
 
       // إذا أردت تحديث عداد السلة في التوب بار أيضاً:
+      const cartBadge = document.querySelector('.topbar .badge');
+      if (cartBadge) {
+        const total = cart.reduce((s, c) => s + c.qty, 0);
+        cartBadge.textContent = total;
+        cartBadge.style.display = total > 0 ? 'block' : 'none';
+      }
+    };
+
+    window.setShopQuantity = (pid, value) => {
+      const p = State.data.products.find(x => x.id === pid);
+      if (!p) return;
+      const maxQty = Math.max(1, Math.min(p.stock || 20, 20));
+      const qty = Math.max(1, Math.min(parseInt(value, 10) || 1, maxQty));
+      const it = cart.find(c => c.pid === pid);
+      if (it) {
+        it.qty = qty;
+      } else {
+        cart.push({ pid: p.id, name: p.name, price: p.price, qty, marketingProfit: p.marketingProfit || 0 });
+      }
+      Store.save();
+      renderShop();
+      const cartBadge = document.querySelector('.topbar .badge');
+      if (cartBadge) {
+        const total = cart.reduce((s, c) => s + c.qty, 0);
+        cartBadge.textContent = total;
+        cartBadge.style.display = total > 0 ? 'block' : 'none';
+      }
+    };
+
+    window.changeShopQty = (pid, delta) => {
+      const p = State.data.products.find(x => x.id === pid);
+      if (!p) return;
+      const it = cart.find(c => c.pid === pid);
+      const qty = it ? it.qty + delta : Math.max(1, delta);
+      if (it) {
+        it.qty = qty;
+        if (it.qty <= 0) {
+          cart = cart.filter(c => c.pid !== pid);
+        }
+      } else if (delta > 0) {
+        cart.push({ pid: p.id, name: p.name, price: p.price, qty, marketingProfit: p.marketingProfit || 0 });
+      }
+      Store.save();
+      renderShop();
       const cartBadge = document.querySelector('.topbar .badge');
       if (cartBadge) {
         const total = cart.reduce((s, c) => s + c.qty, 0);

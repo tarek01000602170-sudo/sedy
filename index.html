@@ -3263,48 +3263,51 @@ function render() {
         <!-- جديد: الوصف المختصر (للملصقات والباركود) -->
         <div class="space-y-1">
           <label class="text-[10px] font-black text-blue-500 uppercase mr-2 italic">الوصف المختصر (يظهر في ملصق الباركود)</label>
-          <input name="shortDesc" value="${p.shortDesc || ''}" placeholder="مثال: قطن 100% - مقاس L - لون أزرق" class="w-full bg-blue-50/30 border border-blue-100 rounded-2xl p-4 font-bold text-sm focus:ring-2 focus:ring-blue-200">
+          <input name="shortDesc" value="${p.shortDesc || ''}" placeholder="مثال: قطن 100% - مقاس L - لون أزرق" class="w-full bg-blue-50/30 border border-blue-100 rounded-2xl p-2 font-bold text-sm focus:ring-2 focus:ring-blue-200">
         </div>
 
         <!-- الصف الثاني: التصنيف والإيموجي والوزن -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="space-y-1">
             <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">التصنيف</label>
-            <select name="cat" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold text-slate-700">${cats}</select>
+            <select name="cat" class="w-full bg-slate-50 border-none rounded-2xl p-3 font-bold text-slate-700">${cats}</select>
           </div>
           <div class="space-y-1">
             <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">إيموجي الاحتياطي</label>
-            <input name="img" value="${p.img || '📦'}" class="w-full bg-slate-50 border-none rounded-2xl p-4 text-center text-2xl">
+            <input name="img" value="${p.img || '🌱'}" class="w-full bg-slate-50 border-none rounded-2xl p-3 text-center text-2xl">
           </div>
           <div class="space-y-1">
             <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic text-emerald-600">الوزن (بالجرام)</label>
-            <input name="weightGram" type="number" value="${p.weightGram || 0}" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-black">
+            <input name="weightGram" type="number" value="${p.weightGram || 0}" class="w-full bg-slate-50 border-none rounded-2xl p-3 font-black">
           </div>
         </div>
 
         <!-- التكلفة والسعر والربح -->
-        <div class="bg-blue-50/50 p-4 rounded-[2rem] border border-blue-100 shadow-inner">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-              <div class="space-y-1">
-                <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">سعر التكلفة</label>
-                <input name="cost" id="f_cost" type="number" value="${p.cost || 0}" oninput="calcLiveProfit()" class="w-full bg-white border-none rounded-2xl p-4 font-black text-red-500 shadow-sm">
+<div class="bg-blue-50/50 p-2 rounded-[2rem] border border-blue-100 shadow-inner">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 items-end">
+              
+              <div class="space-y-1 w-full">
+                <label class="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase mr-1 italic block whitespace-nowrap">سعر التكلفة</label>
+                <input name="cost" id="f_cost" type="number" value="${p.cost || 0}" oninput="calcLiveProfit(false)" class="w-full bg-white border-none rounded-2xl p-2 font-black text-red-500 shadow-sm text-sm sm:text-base">
               </div>
-              <div class="space-y-1">
-                <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">سعر البيع</label>
-                <input name="price" id="f_price" type="number" value="${p.price || 0}" oninput="calcLiveProfit()" class="w-full bg-white border-none rounded-2xl p-4 font-black text-blue-600 shadow-sm">
+              
+              <div class="space-y-1 w-full">
+                <label class="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase mr-1 italic block whitespace-nowrap">سعر البيع</label>
+                <input name="price" id="f_price" type="number" value="${p.price || 0}" oninput="calcLiveProfit(true)" class="w-full bg-white border-none rounded-2xl p-2 font-black text-blue-600 shadow-sm text-sm sm:text-base">
               </div>
-              <div class="bg-white rounded-2xl p-3 text-center border border-blue-100 shadow-sm">
-                <div class="text-[9px] font-black text-slate-400 uppercase">صافي الربح المتوقع</div>
-                <div id="liveProfit" class="text-xl font-black text-emerald-600">${money((p.price || 0) - (p.cost || 0))}</div>
-              </div>
-            </div>
-        </div>
 
-        <!-- عمولة التسويق لكل قطعة -->
-        <div class="space-y-1">
-          <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">عمولة التسويق لكل قطعة</label>
-          <input name="marketingProfit" type="number" step="0.01" value="${p.marketingProfit || 0}" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-black text-emerald-600">
-          <div class="text-[10px] text-slate-500">سيفيد في حساب أرباح المندوبيين تلقائياً.</div>
+              <div class="space-y-1 w-full">
+                <label class="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase mr-1 italic block whitespace-nowrap">عمولة التسويق / قطعة</label>
+                <input name="marketingProfit" id="f_marketingProfit" type="number" step="0.01" value="${p.marketingProfit || 0}" oninput="calcLiveProfit(false)" class="w-full bg-white border-none rounded-2xl p-2 font-black text-emerald-600 shadow-sm text-sm sm:text-base">
+              </div>
+              
+              <div class="bg-white rounded-2xl p-2 text-center border border-blue-100 shadow-sm h-[40x] flex flex-col justify-center items-center w-full min-w-[120px]">
+                <div class="text-[9px] font-black text-slate-400 uppercase tracking-tight whitespace-nowrap">صافي الربح المتوقع</div>
+                <div id="liveProfit" class="text-lg sm:text-xl font-black text-emerald-600 mt-0.5 breakdown-all truncate">${money((p.price || 0) - (p.cost || 0) - (p.marketingProfit || 0))}</div>
+              </div>
+
+            </div>
+            <div class="text-[10px] text-slate-400 mt-3 mr-1">💡 عمولة التسويق تُحسب تلقائياً بنسبة 20% من سعر البيع ويمكنك تعديلها يدوياً لأي رقم في أي وقت.</div>
         </div>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -3358,11 +3361,34 @@ function render() {
       if (typeof lucide !== 'undefined') lucide.createIcons();
       refreshModalImgList();
 
-      // وظيفة حساب الربح اللحظي
-      window.calcLiveProfit = () => {
-        const cost = parseFloat(document.getElementById('f_cost').value) || 0;
-        const price = parseFloat(document.getElementById('f_price').value) || 0;
-        document.getElementById('liveProfit').textContent = money(price - cost);
+// وظيفة حساب الربح اللحظي والعمولة تلقائياً
+      window.calcLiveProfit = (isPriceChanged = false) => {
+        const priceInput = document.getElementById('f_price');
+        const costInput = document.getElementById('f_cost');
+        const marketingInput = document.getElementById('f_marketingProfit');
+        const liveProfitDiv = document.getElementById('liveProfit');
+
+        if (!priceInput || !costInput || !marketingInput || !liveProfitDiv) return;
+
+        const price = parseFloat(priceInput.value) || 0;
+        const cost = parseFloat(costInput.value) || 0;
+
+        // عند كتابة سعر البيع، يتم توليد الـ 20% تلقائياً في خانة العمولة بجانبه
+        if (isPriceChanged) {
+          const autoCommission = price * 0.20;
+          marketingInput.value = autoCommission % 1 === 0 ? autoCommission : autoCommission.toFixed(2);
+        }
+
+        const marketingProfit = parseFloat(marketingInput.value) || 0;
+
+        // الصافي الحقيقي = سعر البيع - التكلفة - عمولة المندوب
+        const netProfit = price - cost - marketingProfit;
+
+        if (typeof money === 'function') {
+          liveProfitDiv.innerText = money(netProfit);
+        } else {
+          liveProfitDiv.innerText = netProfit + ' ج.م';
+        }
       };
 
       // وظيفة الحفظ

@@ -2163,7 +2163,7 @@
     /* ===========================================================
        7. RENDER ROOT
     =========================================================== */
-    function render() {
+function render() {
       try {
         document.documentElement.classList.toggle('dark', State.theme === 'dark');
         document.documentElement.dir = State.lang === 'ar' ? 'rtl' : 'ltr';
@@ -2184,6 +2184,12 @@
           if (State.user && !State.storeMode) bindShell(); // ربط أحداث القائمة الجانبية
         }
 
+        // 👇 السطرين السحريين الجداد 👇
+        // لو إحنا في وضع المتجر (Store Mode)، بنفلتر المنتجات ونستبعد المخفية قبل العرض
+        if (State.storeMode && State.data && State.data.products) {
+          State.data.products = State.data.products.filter(p => p.isAvailable !== 'مخفي' && p.isAvailable !== 'لا');
+        }
+
         // رسم محتوى الصفحة الداخلية
         renderPage();
 
@@ -2195,7 +2201,6 @@
         console.error("Render Error:", error);
       }
     }
-
     function renderSidebarLinks() {
       return NAV.map(g => {
         // فلترة العناصر المسموح بها للمستخدم
@@ -3082,9 +3087,11 @@
       <td class="py-4 text-xs font-bold text-slate-600">${p.weightGram || 0} ج</td>
       
       <!-- 9. الحالة -->
-      <td class="py-4">
-        ${p.isAvailable !== false ? '<span class="text-emerald-500 font-black text-[10px]">متوفر</span>' : '<span class="text-red-400 font-black text-[10px]">مخفي</span>'}
-      </td>
+<td class="py-4">
+  ${p.isAvailable === 'مخفي' ? 
+    '<span class="text-red-400 font-black text-[10px]">مخفي</span>' : 
+    '<span class="text-emerald-500 font-black text-[10px]">متوفر</span>'}
+</td>
       
       <!-- 10. المخزون -->
       <td class="py-4 font-black text-slate-800 text-center">${p.stock || 0}</td>
@@ -3300,8 +3307,7 @@
           <div class="text-[10px] text-slate-500">سيفيد في حساب أرباح المندوبيين تلقائياً.</div>
         </div>
 
-        <!-- المخزون والتوفر -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="space-y-1">
             <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">المخزون الحالي</label>
             <input name="stock" type="number" value="${p.stock || 0}" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-black">
@@ -3312,10 +3318,10 @@
           </div>
           <div class="space-y-1">
             <label class="text-[10px] font-black text-slate-400 uppercase mr-2 italic">حالة التوفر</label>
-            <select name="isAvailable" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-black text-blue-600">
-                <option value="true" ${p.isAvailable !== false ? 'selected' : ''}>✅ متوفر للبيع</option>
-                <option value="false" ${p.isAvailable === false ? 'selected' : ''}>❌ غير متوفر</option>
-            </select>
+<select name="isAvailable" class="w-full bg-slate-50 border-none rounded-2xl p-4 font-black text-blue-600">
+    <option value="متوفر" ${p.isAvailable === 'متوفر' || p.isAvailable !== 'مخفي' ? 'selected' : ''}>✅ متوفر للبيع</option>
+    <option value="مخفي" ${p.isAvailable === 'مخفي' ? 'selected' : ''}>❌ غير متوفر</option>
+</select>
           </div>
         </div>
 
@@ -5292,16 +5298,19 @@ ${State.data.users.map(u => {
   `;
     }
 
-    function renderShop() {
+function renderShop() {
       const grid = document.getElementById('shopGrid');
       const catBar = document.getElementById('shopCats');
       if (!grid) return;
 
-      const products = State.data.products || [];
+      // 1. جلب المنتجات وتصفيتها فوراً لاستبعاد المخفي وغير المتوفر عن الزبائن
+      let products = State.data.products || [];
+      products = products.filter(p => p.isAvailable !== 'مخفي' && p.isAvailable !== 'لا');
+
       const categories = State.data.categories || [];
       const q = document.getElementById('shopS')?.value.toLowerCase() || '';
 
-      // 1. شريط الفئات بشكل "Soft Chips"
+      // 2. شريط الفئات بشكل "Soft Chips"
       const allCats = [{ id: 'all', name: 'الكل' }, ...categories];
       if (catBar) {
         catBar.innerHTML = allCats.map(c => `

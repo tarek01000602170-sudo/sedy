@@ -335,6 +335,20 @@
       --shadow-lg: 0 10px 30px rgba(0, 0, 0, .5);
     }
 
+    html.green {
+      --bg: #eff7ef;
+      --surface: #f9fbf8;
+      --surface-2: #edf6ec;
+      --text: #1f3b2c;
+      --muted: #516c54;
+      --border: #d2e4d2;
+      --primary: #15803d;
+      --primary-2: #166534;
+      --primary-soft: #dcfce7;
+      --shadow: 0 4px 16px rgba(22, 105, 57, .12);
+      --shadow-lg: 0 10px 32px rgba(22, 105, 57, .16);
+    }
+
     * {
       box-sizing: border-box
     }
@@ -1553,6 +1567,218 @@
       color: var(--muted)
     }
 
+    .empty-state {
+      position: relative;
+      min-height: 320px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: radial-gradient(circle at top, rgba(99, 102, 241, 0.15), transparent 25%), linear-gradient(180deg, #0c1220 0%, #101a2f 55%, #08101f 100%);
+      border-radius: 2rem;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      padding: 40px 24px;
+      color: #e2e8f0;
+    }
+
+    .empty-state.empty-state--bare {
+      background: transparent;
+      border: none;
+      padding: 0;
+      min-height: 0;
+    }
+
+    .empty-state::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 40% 20%, rgba(168, 85, 247, 0.15), transparent 20%), radial-gradient(circle at 80% 15%, rgba(56, 189, 248, 0.12), transparent 18%);
+      pointer-events: none;
+    }
+
+    .empty-state-scene {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .empty-state .sprout,
+    .empty-state .rain {
+      position: absolute;
+      pointer-events: none;
+      will-change: transform, opacity;
+    }
+
+    .empty-state .sprout {
+      bottom: 0;
+      width: 4px;
+      height: var(--h, 82px);
+      left: var(--x, 50%);
+      transform-origin: bottom center;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(96, 165, 250, 0.95), rgba(168, 85, 247, 0.2));
+      box-shadow: 0 0 20px rgba(96, 165, 250, 0.25);
+      opacity: 0;
+      animation: sproutGrow 3.4s ease-in-out var(--d, 0s) infinite;
+    }
+
+    .empty-state .rain {
+      top: -40px;
+      left: var(--x, 50%);
+      width: 1px;
+      height: 42px;
+      opacity: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(59, 130, 246, 0.08));
+      filter: blur(0.5px);
+      transform: rotate(12deg) scale(var(--s, 0.9));
+      animation: rainDrop 2.2s linear var(--d, 0s) infinite;
+    }
+
+    .empty-state-copy {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 640px;
+      padding: 0 12px;
+    }
+
+    .empty-state-copy h2 {
+      margin: 0;
+      font-size: clamp(1.75rem, 2.5vw, 2.6rem);
+      line-height: 1.05;
+      letter-spacing: 0.01em;
+    }
+
+    .empty-state-copy p {
+      margin: 16px auto 0;
+      color: rgba(226, 232, 240, 0.8);
+      font-size: 1rem;
+      max-width: 520px;
+      line-height: 1.7;
+    }
+
+    @keyframes sproutGrow {
+      0% { transform: scaleY(0.15); opacity: 0; }
+      35% { transform: scaleY(1.08); opacity: 0.72; }
+      70% { transform: scaleY(0.98); opacity: 0.92; }
+      100% { transform: scaleY(1); opacity: 0.82; }
+    }
+
+    @keyframes rainDrop {
+      0% { transform: translateY(-20px) rotate(12deg); opacity: 0; }
+      20% { opacity: 1; }
+      100% { transform: translateY(420px) rotate(12deg); opacity: 0; }
+    }
+
+    .empty-state-container {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      min-height: 420px;
+    }
+
+    .store-scene-page {
+      position: relative;
+      overflow: hidden;
+      min-height: calc(100vh - 7rem);
+      background: radial-gradient(circle at top, rgba(255, 255, 255, 0.96), transparent 22%), linear-gradient(180deg, #fbfaf6 0%, #f9f6f0 18%, #f4efe5 42%, #ece4d7 72%, #e6dbc9 100%);
+    }
+
+    .store-scene-page::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(37, 23, 9, 0.15));
+      mix-blend-mode: screen;
+    }
+
+    .store-scene-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .store-scene-bg span.rain {
+      position: absolute;
+      top: -100px;
+      width: 1px;
+      height: 90px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.05));
+      filter: blur(0.7px);
+      opacity: 0.85;
+      border-radius: 999px;
+      animation: rainFall 1.6s linear infinite;
+    }
+
+    .store-scene-bg span.seed {
+      position: absolute;
+      bottom: -18px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 252, 235, 0.96), rgba(255, 218, 150, 0.55));
+      box-shadow: 0 0 24px rgba(255, 235, 205, 0.45);
+      animation: seedRise 3.6s ease-in forwards;
+    }
+
+    .store-scene-bg span.plant {
+      position: absolute;
+      bottom: 0;
+      width: 2px;
+      height: 0;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(88, 108, 74, 0.95), rgba(176, 148, 103, 0.22));
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
+      transform-origin: bottom center;
+      animation: plantSprout 3.8s ease-in-out infinite;
+    }
+
+    .store-scene-bg span.plant::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      transform: translateX(-50%) scale(0);
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.85), rgba(255, 237, 196, 0.2));
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.45);
+      animation: leafGlow 3.8s ease-in-out infinite;
+      opacity: 0;
+    }
+
+    @keyframes rainFall {
+      0% { transform: translateY(-100px) skewX(-6deg); opacity: 0; }
+      12% { opacity: 0.85; }
+      100% { transform: translateY(110vh) skewX(-6deg); opacity: 0; }
+    }
+
+    @keyframes seedRise {
+      0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0; }
+      20% { opacity: 1; }
+      90% { transform: translate3d(0, -180px, 0) scale(0.24); opacity: 0.12; }
+      100% { transform: translate3d(0, -190px, 0) scale(0.2); opacity: 0; }
+    }
+
+    @keyframes plantSprout {
+      0%, 18% { height: 0; opacity: 0; transform: scaleY(0.18); }
+      30% { height: 42px; opacity: 1; transform: scaleY(1.05); }
+      55% { height: 48px; transform: scaleY(0.96); }
+      100% { height: 42px; opacity: 0.18; transform: scaleY(1); }
+    }
+
+    @keyframes leafGlow {
+      0% { transform: translateX(-50%) scale(0); opacity: 0; }
+      30% { transform: translateX(-50%) scale(0.8); opacity: 0.65; }
+      70% { transform: translateX(-50%) scale(0.75); opacity: 0.45; }
+      100% { transform: translateX(-50%) scale(0.8); opacity: 0; }
+    }
+
     .flex {
       display: flex;
       gap: 12px;
@@ -1710,15 +1936,11 @@
       theme: localStorage.getItem('theme') || 'light',
       storeMode: false,
       storeEmployeeId: null,
+      loading: true,
       data: {
         users: [], products: [], categories: [], orders: [], customers: [],
         suppliers: [], expenses: [], coupons: [], notifications: [], logs: [],
-        warehouses: [], shipments: [],
-        shippingCompanies: [
-          { id: 'sc1', name: 'بوسطة', basePrice: 45, extraKgPrice: 7, note: '' },
-          { id: 'sc2', name: 'جي برايدر', basePrice: 50, extraKgPrice: 8, note: '' },
-          { id: 'sc3', name: 'ارامكس', basePrice: 60, extraKgPrice: 10, note: '' }
-        ]
+        warehouses: [], shipments: [], shippingCompanies: [], settings: {}
       }
     };
 
@@ -1807,7 +2029,6 @@
       DOC_ID: 'sedy_private_store_tarek', // اسم فريد خاص بك فقط
 
       async save() {
-        localStorage.setItem(this.KEY, JSON.stringify(State.data));
         if (USE_FIREBASE && typeof db !== 'undefined') {
           try {
             await db.collection('settings').doc(this.DOC_ID).set(State.data);
@@ -1817,29 +2038,59 @@
       },
 
       async load() {
-        // تحميل من الجهاز أولاً للسرعة
-        try {
-          const localData = JSON.parse(localStorage.getItem(this.KEY));
-          if (localData) State.data = localData;
-        } catch (e) { }
+        State.loading = true;
+        State.data = {
+          users: [], products: [], categories: [], orders: [], customers: [],
+          suppliers: [], expenses: [], coupons: [], notifications: [], logs: [],
+          warehouses: [], shipments: [], shippingCompanies: [], settings: {}
+        };
 
-        if (!State.data.settings) {
-          State.data.settings = { whatsappNumber: '20100123456789', whatsappAutoSend: true };
-        }
-
-        // المزامنة اللحظية
         if (USE_FIREBASE && typeof db !== 'undefined') {
-          db.collection('settings').doc(this.DOC_ID).onSnapshot((doc) => {
-            if (doc.exists) {
-              State.data = doc.data();
-              if (!State.data.settings) {
-                State.data.settings = { whatsappNumber: '20100123456789', whatsappAutoSend: true };
+          return new Promise((resolve) => {
+            let firstSnapshot = true;
+            db.collection('settings').doc(this.DOC_ID).onSnapshot((doc) => {
+              if (doc.exists) {
+                State.data = doc.data() || {};
+              } else {
+                State.data = { users: [], products: [], categories: [], orders: [], customers: [], suppliers: [], expenses: [], coupons: [], notifications: [], logs: [], warehouses: [], shipments: [], shippingCompanies: [], settings: {} };
+                console.log("☁️ وثيقة Firebase غير موجودة، سيتم عرض حاله فارغة");
               }
-              render();
-              console.log("☁️ البيانات متزامنة الآن");
-            }
+              State.data.users = Array.isArray(State.data.users) ? State.data.users : [];
+              State.data.products = Array.isArray(State.data.products) ? State.data.products : [];
+              State.data.categories = Array.isArray(State.data.categories) ? State.data.categories : [];
+              State.data.orders = Array.isArray(State.data.orders) ? State.data.orders : [];
+              State.data.customers = Array.isArray(State.data.customers) ? State.data.customers : [];
+              State.data.suppliers = Array.isArray(State.data.suppliers) ? State.data.suppliers : [];
+              State.data.expenses = Array.isArray(State.data.expenses) ? State.data.expenses : [];
+              State.data.coupons = Array.isArray(State.data.coupons) ? State.data.coupons : [];
+              State.data.notifications = Array.isArray(State.data.notifications) ? State.data.notifications : [];
+              State.data.logs = Array.isArray(State.data.logs) ? State.data.logs : [];
+              State.data.warehouses = Array.isArray(State.data.warehouses) ? State.data.warehouses : [];
+              State.data.shipments = Array.isArray(State.data.shipments) ? State.data.shipments : [];
+              State.data.shippingCompanies = Array.isArray(State.data.shippingCompanies) ? State.data.shippingCompanies : [];
+              State.data.settings = State.data.settings || {};
+              State.loading = false;
+              if (firstSnapshot) {
+                firstSnapshot = false;
+                resolve();
+              } else {
+                render();
+              }
+            }, (error) => {
+              console.error("Firebase load error", error);
+              State.loading = false;
+              if (firstSnapshot) {
+                firstSnapshot = false;
+                resolve();
+              } else {
+                render();
+              }
+            });
           });
         }
+
+        State.loading = false;
+        return Promise.resolve();
       }
     };
 
@@ -1934,7 +2185,7 @@
     function dateStr(t) { return new Date(t).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' }) }
 
     /* ===========================================================
-       3. DEMO SEED DATA
+       3. DATA HELPERS
     =========================================================== */
     function normalizeSlug(value) {
       const s = (value || '').toString().toLowerCase().trim();
@@ -1955,67 +2206,7 @@
       }
       return slug;
     }
-    function seedDemo() {
-      State.data = {
-        users: [
-          { id: 'u1', name: 'طارق', email: 'tarek@sedy.com', pass: '123456', role: 'super_admin' },
-          { id: 'u2', name: 'محمود علي', email: 'sales@erp.com', pass: 'sales', phone: '201012345678', role: 'sales', commission: 0, storeLink: generateStoreLink('محمود علي') },
-          { id: 'u3', name: 'سارة حسن', email: 'ops@erp.com', pass: 'ops', phone: '201098765432', role: 'ops', storeLink: generateStoreLink('سارة حسن') },
-          { id: 'u4', name: 'عميل تجريبي', email: 'customer@erp.com', pass: 'customer', role: 'customer' }
-        ],
-        categories: [
-          { id: 'c1', name: 'إلكترونيات' }, { id: 'c2', name: 'ملابس' }, { id: 'c3', name: 'منزل ومطبخ' }, { id: 'c4', name: 'مستحضرات تجميل' }
-        ],
-        warehouses: [
-          { id: 'w1', name: 'المخزن الرئيسي - القاهرة' }, { id: 'w2', name: 'فرع الإسكندرية' }
-        ],
-        products: [
-          { id: 'p1', name: 'سماعة بلوتوث برو', sku: 'BT-001', cat: 'c1', cost: 200, price: 450, stock: 45, minStock: 10, velocity: 3, img: '🎧' },
-          { id: 'p2', name: 'ساعة ذكية', sku: 'SW-002', cat: 'c1', cost: 600, price: 1200, stock: 8, minStock: 10, velocity: 1, img: '⌚' },
-          { id: 'p3', name: 'تيشيرت قطن', sku: 'TS-003', cat: 'c2', cost: 80, price: 180, stock: 120, minStock: 30, velocity: 5, img: '👕' },
-          { id: 'p4', name: 'مكنسة كهربائية', sku: 'VC-004', cat: 'c3', cost: 850, price: 1499, stock: 15, minStock: 5, velocity: 1, img: '🧹' },
-          { id: 'p5', name: 'كريم مرطب', sku: 'CR-005', cat: 'c4', cost: 45, price: 120, stock: 200, minStock: 50, velocity: 8, img: '🧴' },
-          { id: 'p6', name: 'لابتوب احترافي', sku: 'LP-006', cat: 'c1', cost: 12000, price: 18500, stock: 5, minStock: 3, velocity: 0.5, img: '💻' }
-        ],
-        customers: [
-          { id: 'cu1', name: 'محمد إبراهيم', phone: '01012345678', gov: 'القاهرة', points: 340, vip: true, total: 5400 },
-          { id: 'cu2', name: 'فاطمة أحمد', phone: '01098765432', gov: 'الجيزة', points: 120, vip: false, total: 1800 },
-          { id: 'cu3', name: 'علي حسن', phone: '01155667788', gov: 'الإسكندرية', points: 80, vip: false, total: 950 }
-        ],
-        suppliers: [
-          { id: 's1', name: 'شركة التوريدات الكبرى', phone: '0223344556', debt: 15000 },
-          { id: 's2', name: 'مورد الإلكترونيات', phone: '0226677889', debt: 0 }
-        ],
-        orders: [
-          { id: 'o1', code: 'ORD-1001', customerId: 'cu1', items: [{ pid: 'p1', qty: 2, price: 450 }, { pid: 'p5', qty: 3, price: 120 }], total: 1260, status: 'delivered', gov: 'القاهرة', shipping: 50, date: now() - 86400000 * 3, salesman: 'u2', salesmanId: 'u2', paid: 1260 },
-          { id: 'o2', code: 'ORD-1002', customerId: 'cu2', items: [{ pid: 'p3', qty: 5, price: 180 }], total: 900, status: 'shipped', gov: 'الجيزة', shipping: 60, date: now() - 86400000 * 1, salesman: 'u2', salesmanId: 'u2', paid: 900 },
-          { id: 'o3', code: 'ORD-1003', customerId: 'cu3', items: [{ pid: 'p2', qty: 1, price: 1200 }], total: 1200, status: 'pending', gov: 'الإسكندرية', shipping: 80, date: now() - 3600000 * 2, salesman: 'u2', salesmanId: 'u2', paid: 0 }
-        ],
-        expenses: [
-          { id: 'e1', type: 'رواتب', amount: 25000, date: now() - 86400000 * 5, note: 'مرتبات يونيو' },
-          { id: 'e2', type: 'إعلانات', amount: 8000, date: now() - 86400000 * 7, note: 'حملة فيسبوك' },
-          { id: 'e3', type: 'إيجار', amount: 12000, date: now() - 86400000 * 15, note: 'إيجار المقر' }
-        ],
-        settings: {
-          whatsappNumber: '20100123456789',
-          whatsappAutoSend: true
-        },
-        coupons: [
-          { id: 'cp1', code: 'WELCOME10', discount: 10, type: 'percent', used: 12, limit: 100 },
-          { id: 'cp2', code: 'FREESHIP', discount: 50, type: 'fixed', used: 5, limit: 50 }
-        ],
-        notifications: [
-          { id: 'n1', title: 'طلب جديد #ORD-1003', time: now() - 3600000, read: false, type: 'order', orderId: 'o3', salesmanId: 'u2' },
-          { id: 'n2', title: 'مخزون منخفض: ساعة ذكية', time: now() - 7200000, read: false, type: 'product', productId: 'p2', salesmanId: null },
-          { id: 'n3', title: 'تم شحن طلب #ORD-1002', time: now() - 86400000, read: true, type: 'order', orderId: 'o2', salesmanId: 'u2' }
-        ],
-        logs: [
-          { id: 'l1', user: 'admin@erp.com', action: 'تسجيل دخول', time: now() - 3600000 },
-          { id: 'l2', user: 'sales@erp.com', action: 'إنشاء طلب ORD-1003', time: now() - 7200000 }
-        ],
-        shipments: []
-      };
-    }
+    // Firebase-only data mode enabled; no local state seed is loaded.
 
     /* ===========================================================
        4. AUTHENTICATION
@@ -2163,9 +2354,10 @@
     /* ===========================================================
        7. RENDER ROOT
     =========================================================== */
-function render() {
+function render(forceShell = false) {
       try {
         document.documentElement.classList.toggle('dark', State.theme === 'dark');
+        document.documentElement.classList.toggle('green', State.theme === 'green');
         document.documentElement.dir = State.lang === 'ar' ? 'rtl' : 'ltr';
         const root = document.getElementById('app-root');
 
@@ -2178,17 +2370,14 @@ function render() {
         }
         const activeShell = root.dataset.shell;
 
-        if (activeShell !== currentShell) {
+        if (activeShell !== currentShell || forceShell) {
           root.innerHTML = State.storeMode ? PublicShell() : (State.user ? AppShell() : PublicShell());
           root.dataset.shell = currentShell;
           if (State.user && !State.storeMode) bindShell(); // ربط أحداث القائمة الجانبية
         }
 
-        // 👇 السطرين السحريين الجداد 👇
-        // لو إحنا في وضع المتجر (Store Mode)، بنفلتر المنتجات ونستبعد المخفية قبل العرض
-        if (State.storeMode && State.data && State.data.products) {
-          State.data.products = State.data.products.filter(p => p.isAvailable !== 'مخفي' && p.isAvailable !== 'لا');
-        }
+        // المنتج في وضع المتجر يتم ترشيحه أثناء العرض فقط
+        // لا نُعدّل State.data.products بشكل دائم لتفادي مشاكل إعادة التحميل.
 
         // رسم محتوى الصفحة الداخلية
         renderPage();
@@ -2269,7 +2458,7 @@ function render() {
       }
 
       return `
-  <div class="min-h-screen bg-[#f8fafc]" dir="${State.lang === 'ar' ? 'rtl' : 'ltr'}">
+  <div class="min-h-screen" style="background: var(--bg)" dir="${State.lang === 'ar' ? 'rtl' : 'ltr'}">
     <!-- شعار البائع إذا وجد -->
     ${refSeller ? `<div class="bg-blue-600 text-white text-[11px] font-black text-center py-2 uppercase tracking-widest shadow-inner">
        ✨ أنت تتسوق الآن من متجر: ${refSeller.name}
@@ -2297,6 +2486,16 @@ function render() {
             <button onclick="State.page='cart';render()" class="relative min-w-[44px] min-h-[44px] w-10 md:w-12 h-10 md:h-12 flex items-center justify-center bg-white rounded-2xl border border-slate-100 shadow-sm hover:bg-slate-50 transition-all active:scale-90">
                 <i data-lucide="shopping-cart" class="w-5 h-5 text-slate-600"></i>
                 ${cartCount > 0 ? `<span class="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black w-6 h-6 rounded-full flex items-center justify-center border-4 border-[#f8fafc]">${cartCount}</span>` : ''}
+            </button>
+            <button onclick="openCustomerChatModal()" title="تحدث مع الدعم" class="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all active:scale-90">
+              <i data-lucide="message-circle" class="w-5 h-5"></i>
+            </button>
+            <button onclick="showNotifs()" title="الاشعارات" class="relative w-10 h-10 rounded-xl bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all active:scale-90">
+              <i data-lucide="bell" class="w-5 h-5"></i>
+              ${getNotificationCount() ? `<span class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-5 h-5 rounded-full border-2 border-white flex items-center justify-center font-black">${getNotificationCount()}</span>` : ''}
+            </button>
+            <button onclick="toggleTheme()" title="تغيير لون الواجهة" class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-all active:scale-90">
+              <i data-lucide="${State.theme === 'dark' ? 'sun' : State.theme === 'green' ? 'leaf' : 'moon'}" class="w-5 h-5"></i>
             </button>
             ${State.storeMode ? '' : `<button onclick="showLoginModal()" class="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-slate-900 text-white rounded-2xl font-black text-xs md:text-xs min-h-[44px] hover:bg-slate-800 shadow-xl shadow-slate-200 transition-all active:scale-90">
               <i data-lucide="user-circle" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
@@ -2361,16 +2560,10 @@ function render() {
     <h1>نظام الإدارة المتكامل</h1>
     <p>ERP + Ecommerce + CRM</p>
     <form id="loginForm">
-      <div class="row mb"><label>البريد الإلكتروني</label><input name="email" value="tarek@sedy.com" required></div>
-      <div class="row mb"><label>كلمة المرور</label><input name="pass" type="password" value="123456" required></div>
+      <div class="row mb"><label>البريد الإلكتروني</label><input name="email" placeholder="example@email.com" required></div>
+      <div class="row mb"><label>كلمة المرور</label><input name="pass" type="password" placeholder="••••••••" required></div>
       <button class="btn primary" style="width:100%;justify-content:center;padding:12px">تسجيل الدخول</button>
     </form>
-    <div class="role-chips">
-      <button data-l="tarek@sedy.com|123456">مدير</button>
-      <button data-l="sales@erp.com|sales">مندوب</button>
-      <button data-l="ops@erp.com|ops">تشغيل</button>
-      <button data-l="customer@erp.com|customer">عميل</button>
-    </div>
     <div style="margin-top:14px;text-align:center"><button class="btn ghost" onclick="State.page='shop';render()">⬅ العودة للمتجر</button></div>
     <p style="margin-top:14px;font-size:11px;text-align:center">${USE_FIREBASE ? '✅ متصل بـ Firebase' : '💾 وضع التخزين المحلي'}</p>
   </div></div>`;
@@ -2383,13 +2576,6 @@ function render() {
         if (u) { toast('مرحباً ' + u.name, 'success'); render(); }
         else toast('بيانات خاطئة', 'danger');
       };
-      document.querySelectorAll('.role-chips button').forEach(b => {
-        b.onclick = () => {
-          const [e, p] = b.dataset.l.split('|');
-          document.querySelector('[name=email]').value = e;
-          document.querySelector('[name=pass]').value = p;
-        };
-      });
     }
 
     /* ===========================================================
@@ -2444,15 +2630,18 @@ function render() {
         </div>
 
         <div class="flex items-center gap-2">
+            ${State.user && (State.user.canAccessChat || State.user.isChatAdmin) ? `<button onclick="State.page='support';render()" title="المحادثات" class="relative w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 active:scale-95 transition-all"><i data-lucide="message-square" class="w-5 h-5"></i>${(window.Chat && window.Chat.unreadTotal) ? `<span class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-5 h-5 rounded-full border-2 border-white flex items-center justify-center font-black">${window.Chat.unreadTotal}</span>` : ''}</button>` : ''}
             <button onclick="showNotifs()" class="relative w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 active:scale-95 transition-all">
                 <i data-lucide="bell" class="w-5 h-5"></i>
                 ${getNotificationCount() ? `<span class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-5 h-5 rounded-full border-2 border-white flex items-center justify-center font-black">${getNotificationCount()}</span>` : ''}
             </button>
-            <button onclick="State.page='cart';render()" class="relative w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
-                <i data-lucide="shopping-cart" class="w-5 h-5"></i>
-                ${cart.length > 0 ? `<span class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-5 h-5 rounded-full border-2 border-white flex items-center justify-center font-black">${cart.length}</span>` : ''}
+            <button onclick="State.page='cart';render()" class="relative min-w-[56px] min-h-[56px] w-14 h-14 flex items-center justify-center bg-white rounded-2xl border border-slate-100 shadow-sm hover:bg-slate-50 transition-all active:scale-90">
+                <i data-lucide="shopping-cart" class="w-7 h-7 text-slate-600"></i>
+                ${cart.length > 0 ? `<span class="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] w-6 h-6 rounded-full border-4 border-[#f8fafc] flex items-center justify-center font-black">${cart.length}</span>` : ''}
             </button>
-            <button onclick="toggleTheme()" class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500"><i data-lucide="${State.theme === 'dark' ? 'sun' : 'moon'}" class="w-5 h-5"></i></button>
+            <button onclick="toggleTheme()" title="تغيير لون الواجهة" class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-all">
+              <i data-lucide="${State.theme === 'dark' ? 'sun' : State.theme === 'green' ? 'leaf' : 'moon'}" class="w-5 h-5"></i>
+            </button>
         </div>
       </header>
       
@@ -2467,12 +2656,26 @@ function render() {
     }
     function bindShell() {
       document.querySelectorAll('[data-page]').forEach(a => {
-        a.onclick = e => { e.preventDefault(); State.page = a.dataset.page; document.getElementById('sidebar').classList.remove('open'); render(); };
+        a.onclick = e => {
+          e.preventDefault();
+          State.page = a.dataset.page;
+          document.getElementById('mainSidebar')?.classList.remove('open');
+          render();
+        };
       });
-      document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+      const menuToggle = document.getElementById('menuToggle');
+      if (menuToggle) {
+        menuToggle.onclick = () => document.getElementById('mainSidebar')?.classList.toggle('open');
+      }
     }
     function toggleLang() { State.lang = State.lang === 'ar' ? 'en' : 'ar'; localStorage.setItem('lang', State.lang); render(); }
-    function toggleTheme() { State.theme = State.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('theme', State.theme); render(); }
+    function cycleTheme() {
+      const next = State.theme === 'light' ? 'dark' : State.theme === 'dark' ? 'green' : 'light';
+      State.theme = next;
+      localStorage.setItem('theme', State.theme);
+      render(true);
+    }
+    function toggleTheme() { cycleTheme(); }
     function quickAction() {
       if (State.page === 'products') openProductForm();
       else if (State.page === 'orders' || State.page === 'pos') State.page = 'pos', render();
@@ -2498,13 +2701,51 @@ function render() {
     }
 
     function getVisibleNotifications() {
-      if (!State.user) return [];
+      if (!State.user) {
+        if (State.storeMode && State.storeEmployeeId) {
+          return (State.data.notifications || []).filter(n => !n.salesmanId || n.salesmanId === State.storeEmployeeId);
+        }
+        return State.data.notifications || [];
+      }
       if (State.user.role === 'super_admin') return State.data.notifications || [];
       return (State.data.notifications || []).filter(n => n.salesmanId === State.user.id);
     }
 
     function getNotificationCount() {
       return getVisibleNotifications().filter(n => !n.read).length;
+    }
+
+    function playNotificationSound() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 620;
+        gain.gain.value = 0.08;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.12);
+        osc.onended = () => ctx.close();
+      } catch (error) {
+        console.warn('Notification sound failed', error);
+      }
+    }
+
+    function showBrowserNotification(title, options = {}) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          new Notification(title, {
+            body: options.body || '',
+            icon: options.icon || '',
+            tag: options.tag || 'seedy-seedy-notification'
+          });
+        } catch (error) {
+          console.warn('Browser notification failed', error);
+        }
+      }
     }
 
     function notify({ type, title, orderId = null, productId = null, salesmanId = null }) {
@@ -2519,6 +2760,11 @@ function render() {
         read: false
       });
       Store.save();
+      if (!State.loading) {
+        playNotificationSound();
+        showBrowserNotification('إشعار جديد', { body: title, tag: type });
+        render(true);
+      }
     }
 
     function notifyOrderEvent(order, message) {
@@ -2529,6 +2775,248 @@ function render() {
     function notifyProductEvent(message, productId = null) {
       notify({ type: 'product', title: message, productId, salesmanId: null });
     }
+
+    /* ===========================================================
+       11. SUPPORT CHAT (Realtime via Firebase)
+    =========================================================== */
+    // Simple chat manager using Firestore collections:
+    // - collection 'support_chats' stores chat meta documents
+    // - subcollection 'messages' under each chat stores message documents
+    window.Chat = {
+      listeners: {},
+      openChatId: null,
+
+      async getOrCreateChatForCustomer(customerId, customerName) {
+        const q = await db.collection('support_chats').where('customerId', '==', customerId).limit(1).get();
+        if (!q.empty) return { id: q.docs[0].id, ...q.docs[0].data() };
+        const ref = await db.collection('support_chats').add({ customerId, customerName, createdAt: firebase.firestore.FieldValue.serverTimestamp(), updatedAt: firebase.firestore.FieldValue.serverTimestamp(), lastMessage: '', unread: 0 });
+        return { id: ref.id };
+      },
+
+      async sendMessage(chatId, text, from, senderId) {
+        const m = { text, from, senderId, time: firebase.firestore.FieldValue.serverTimestamp(), read: false };
+        await db.collection('support_chats').doc(chatId).collection('messages').add(m);
+        // if customer sent the message, increment unread counter for agents
+        if (from === 'customer') {
+          await db.collection('support_chats').doc(chatId).set({ lastMessage: text, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), unread: firebase.firestore.FieldValue.increment(1) }, { merge: true });
+        } else {
+          await db.collection('support_chats').doc(chatId).set({ lastMessage: text, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        }
+      },
+
+      // set typing status on chat doc
+      setTyping(chatId, info = { userId: null, name: null, from: 'customer' }) {
+        try {
+          db.collection('support_chats').doc(chatId).set({ typing: { userId: info.userId, name: info.name, from: info.from, at: firebase.firestore.FieldValue.serverTimestamp() } }, { merge: true });
+        } catch (e) { console.warn('setTyping failed', e); }
+      },
+
+      // Listen to a specific chat messages (realtime)
+      listenToChat(chatId, onMessage) {
+        if (this.listeners[chatId]) return; // already listening
+        const unsub = db.collection('support_chats').doc(chatId).collection('messages').orderBy('time', 'asc').limitToLast(200).onSnapshot(snap => {
+          const msgs = [];
+          snap.docChanges().forEach(ch => {
+            if (ch.type === 'added') msgs.push({ id: ch.doc.id, ...(ch.doc.data() || {}) });
+          });
+          if (msgs.length) onMessage(msgs);
+        });
+        this.listeners[chatId] = unsub;
+      },
+
+      stopListening(chatId) {
+        if (this.listeners[chatId]) { this.listeners[chatId](); delete this.listeners[chatId]; }
+      },
+
+      // Admin: list recent chats
+      listenToChats(onChange) {
+        if (this.chatsUnsub) return;
+        this.chatsUnsub = db.collection('support_chats').orderBy('updatedAt', 'desc').limit(100).onSnapshot(snap => {
+          const chats = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }));
+          // compute unread total
+          try { this.unreadTotal = chats.reduce((s, c) => s + (c.unread || 0), 0); } catch (e) { this.unreadTotal = 0; }
+          try { render(); } catch (e) {}
+          // detect changes and notify admin/browser
+          snap.docChanges().forEach(ch => {
+            if (ch.type === 'added' || ch.type === 'modified') {
+              const data = ch.doc.data() || {};
+              // If admin is not currently viewing this chat, notify
+              if (!(_currentSupportChatId && _currentSupportChatId === ch.doc.id)) {
+                try { playNotificationSound(); showBrowserNotification('محادثة جديدة', { body: data.lastMessage || 'رسالة جديدة من عميل' }); } catch (e) {}
+              }
+            }
+          });
+          onChange(chats);
+        });
+      },
+
+      stopListenToChats() { if (this.chatsUnsub) { this.chatsUnsub(); this.chatsUnsub = null; } }
+    };
+
+    // Generate a lightweight guest id for public visitors
+    function getGuestId() {
+      let g = localStorage.getItem('guestId');
+      if (!g) { g = 'g_' + uid(); localStorage.setItem('guestId', g); }
+      return g;
+    }
+
+    // Customer-facing chat modal
+    function openCustomerChatModal() {
+      const guestId = getGuestId();
+      const name = localStorage.getItem('guestName') || 'زائر';
+      modal(`<div id="customer-chat-root" style="width:100%;max-width:720px;height:80vh;display:flex;flex-direction:column">
+        <div style="padding:12px;border-bottom:1px solid var(--border);font-weight:800">دعم العملاء</div>
+        <div id="customer-chat-messages" style="flex:1;overflow:auto;padding:12px;background:transparent"></div>
+        <div style="padding:8px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center">
+          <input id="customer-chat-input" placeholder="اكتب رسالة..." style="flex:1;padding:10px;border-radius:12px;border:1px solid var(--border)">
+          <button class="btn primary" onclick="submitCustomerChat()">إرسال</button>
+        </div>
+      </div>`);
+
+      (async () => {
+        const chat = await Chat.getOrCreateChatForCustomer(guestId, name);
+        Chat.openChatId = chat.id;
+        Chat.listenToChat(chat.id, msgs => {
+          const wrap = document.getElementById('customer-chat-messages');
+          msgs.forEach(m => {
+            const el = document.createElement('div');
+            el.style.margin = '6px 0';
+            el.innerHTML = `<div style="max-width:78%;padding:8px;border-radius:12px;background:${m.from === 'customer' ? 'var(--primary)' : 'var(--surface)'};color:${m.from === 'customer' ? '#fff' : 'var(--text)'}">${escapeHtml(m.text)}</div>`;
+            wrap.appendChild(el);
+          });
+          wrap.scrollTop = wrap.scrollHeight;
+        });
+        // typing indicator listener
+        db.collection('support_chats').doc(chat.id).onSnapshot(doc => {
+          const data = doc.data() || {};
+          const t = data.typing;
+          const indicator = document.getElementById('customer-chat-typing');
+          if (t && t.at) {
+            // show typing for a short time
+            // (server timestamp comes as object with seconds)
+            const ts = (t.at.seconds ? t.at.seconds * 1000 : Date.now());
+            if (Date.now() - ts < 3000) {
+              if (!indicator) {
+                const el = document.createElement('div'); el.id = 'customer-chat-typing'; el.style.padding='6px'; el.style.fontSize='12px'; el.style.opacity='0.8'; el.innerText = `${t.name || 'المستخدم'} يكتب...`;
+                document.getElementById('customer-chat-messages').appendChild(el);
+              }
+            } else {
+              if (indicator) indicator.remove();
+            }
+          }
+        });
+
+        // input typing emitter (debounced by simple timeout)
+        let typingTimer = null;
+        const input = document.getElementById('customer-chat-input');
+        if (input) {
+          input.addEventListener('input', () => {
+            Chat.setTyping(chat.id, { userId: guestId, name, from: 'customer' });
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+              // no-op: typing expiry will be handled by timestamp comparison
+            }, 2500);
+          });
+        }
+      })();
+    }
+
+    function submitCustomerChat() {
+      const input = document.getElementById('customer-chat-input');
+      if (!input) return;
+      const text = (input.value || '').trim();
+      if (!text) return;
+      const guestId = getGuestId();
+      const name = localStorage.getItem('guestName') || 'زائر';
+      (async () => {
+        const chat = await Chat.getOrCreateChatForCustomer(guestId, name);
+        await Chat.sendMessage(chat.id, text, 'customer', guestId);
+        input.value = '';
+      })();
+    }
+
+    // Admin chat page
+    function SupportChat() {
+      if (!State.user || !(State.user.canAccessChat || State.user.isChatAdmin)) return `<div class="card"><h3>صلاحية الوصول مفقودة</h3><p class="muted">ليس لديك صلاحية الوصول لنظام دعم العملاء.</p></div>`;
+      return `<div class="grid cols-3 gap-6">
+        <div class="card" style="padding:0;max-height:70vh;overflow:auto">
+          <div style="padding:12px;border-bottom:1px solid var(--border);font-weight:800">جميع المحادثات</div>
+          <div id="support-chat-list"></div>
+        </div>
+        <div class="card col-span-2" style="display:flex;flex-direction:column;padding:0;height:70vh">
+          <div id="support-chat-main-header" style="padding:12px;border-bottom:1px solid var(--border);font-weight:800">اختر محادثة لبدء الرد</div>
+          <div id="support-chat-messages" style="flex:1;overflow:auto;padding:12px"></div>
+          <div style="padding:8px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center">
+            <input id="support-chat-input" placeholder="اكتب رسالة للعميل..." style="flex:1;padding:10px;border-radius:12px;border:1px solid var(--border)">
+            <button class="btn primary" onclick="submitSupportMessage()">إرسال</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    let _currentSupportChatId = null;
+    function SupportChat_after() {
+      const listEl = document.getElementById('support-chat-list');
+      listEl.innerHTML = '<div style="padding:12px">جارٍ التحميل...</div>';
+      Chat.listenToChats(chats => {
+        listEl.innerHTML = chats.map(c => `<div style="padding:12px;border-bottom:1px solid var(--border);cursor:pointer" onclick="openAdminChat('${c.id}', '${escapeHtml(c.customerName || 'عميل')}')">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div><b>${escapeHtml(c.customerName || 'زائر')}</b><div class="muted" style="font-size:12px">${c.lastMessage || ''}</div></div><div class="text-xs muted">${c.unread||0}</div></div>
+        </div>`).join('');
+      });
+    }
+    SupportChat.after = SupportChat_after;
+
+    function openAdminChat(chatId, name) {
+      _currentSupportChatId = chatId;
+      document.getElementById('support-chat-main-header').innerText = name;
+      const wrap = document.getElementById('support-chat-messages'); wrap.innerHTML = '';
+      // mark unread cleared for admins when they open chat
+      try { db.collection('support_chats').doc(chatId).set({ unread: 0 }, { merge: true }); } catch (e) {}
+      Chat.listenToChat(chatId, msgs => {
+        msgs.forEach(m => {
+          const el = document.createElement('div'); el.style.margin='6px 0';
+          el.innerHTML = `<div style="max-width:78%;padding:8px;border-radius:12px;background:${m.from === 'customer' ? 'var(--surface)' : 'var(--primary)'};color:${m.from === 'customer' ? 'var(--text)' : '#fff'}">${escapeHtml(m.text)}</div>`;
+          wrap.appendChild(el);
+        });
+        wrap.scrollTop = wrap.scrollHeight;
+      });
+      // listen for typing indicator on chat doc
+      db.collection('support_chats').doc(chatId).onSnapshot(d => {
+        const data = d.data() || {};
+        const t = data.typing;
+        const hdr = document.getElementById('support-chat-main-header');
+        if (t && t.at) {
+          const ts = (t.at.seconds ? t.at.seconds * 1000 : Date.now());
+          if (Date.now() - ts < 3000) {
+            hdr.innerText = name + ' · يكتب...';
+            return;
+          }
+        }
+        hdr.innerText = name;
+      });
+      // admin typing emit
+      const input = document.getElementById('support-chat-input');
+      if (input) {
+        let adminTypingTimer = null;
+        input.addEventListener('input', () => {
+          Chat.setTyping(chatId, { userId: State.user ? State.user.id : 'admin', name: State.user ? State.user.name : 'المندوب', from: 'agent' });
+          clearTimeout(adminTypingTimer);
+          adminTypingTimer = setTimeout(() => {}, 2000);
+        });
+      }
+    }
+
+    async function submitSupportMessage() {
+      const input = document.getElementById('support-chat-input'); if (!input) return; const text = (input.value||'').trim(); if (!text) return;
+      if (!State.user || !(State.user.canReplyChat || State.user.isChatAdmin)) { toast('لا تملك صلاحية الرد على المحادثات', 'danger'); return; }
+      const adminId = State.user ? State.user.id : 'admin';
+      await Chat.sendMessage(_currentSupportChatId, text, 'agent', adminId);
+      input.value = '';
+    }
+
+    // helper escape
+    function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 
     function orderProfit(order) {
       return (order.items || []).reduce((sum, item) => {
@@ -2579,6 +3067,8 @@ function render() {
         suppliers: Suppliers, commissions: Commissions, whatsapp: WhatsApp, analytics: Analytics,
         users: Users, logs: Logs, settings: Settings, shop: Shop, cart: Cart, 'my-orders': MyOrders
       };
+      // Support chat admin page
+      pages.support = SupportChat;
 
       const fn = pages[State.page] || (() => '<div class="card">صفحة غير موجودة</div>');
       el.innerHTML = fn();
@@ -2587,6 +3077,28 @@ function render() {
       if (fn.after) fn.after();
       else if (State.page === 'shop') renderShop();
       else if (State.page === 'pos') renderPosList();
+    }
+
+    function renderAnimatedState(message) {
+      const bareClass = message ? '' : ' empty-state--bare';
+      return `<div class="empty-state${bareClass}">
+        <div class="empty-state-scene" aria-hidden="true">
+          <span class="sprout" style="--x:8%; --h:72px; --d:0s"></span>
+          <span class="sprout" style="--x:18%; --h:84px; --d:0.3s"></span>
+          <span class="sprout" style="--x:34%; --h:102px; --d:0.15s"></span>
+          <span class="sprout" style="--x:52%; --h:78px; --d:0.45s"></span>
+          <span class="sprout" style="--x:70%; --h:98px; --d:0.2s"></span>
+          <span class="sprout" style="--x:86%; --h:88px; --d:0.35s"></span>
+          <span class="rain" style="--x:12%; --d:0.1s; --s:0.95"></span>
+          <span class="rain" style="--x:24%; --d:0.45s; --s:0.7"></span>
+          <span class="rain" style="--x:36%; --d:0.25s; --s:0.85"></span>
+          <span class="rain" style="--x:48%; --d:0.55s; --s:0.65"></span>
+          <span class="rain" style="--x:60%; --d:0.15s; --s:0.9"></span>
+          <span class="rain" style="--x:72%; --d:0.4s; --s:0.75"></span>
+          <span class="rain" style="--x:84%; --d:0.3s; --s:0.8"></span>
+        </div>
+        ${message ? `<div class="empty-state-copy"><h2>${message}</h2><p>تحديث تلقائي عند اكتمال تحميل البيانات من Firebase.</p></div>` : ''}
+      </div>`;
     }
 
     /* ===========================================================
@@ -2900,8 +3412,10 @@ function render() {
     =========================================================== */
     // --- 1. واجهة صفحة المنتجات ---
     function Products() {
-      return `
-  <div class="bg-white rounded-[2rem] p-6 border border-slate-100 soft-shadow">
+      const products = State.data.products || [];
+      const loading = State.loading;
+      const headerHtml = `
+  <div class="bg-white rounded-[2rem] p-6 border border-slate-100 soft-shadow mb-6">
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
       <div>
         <h3 class="text-xl font-black text-slate-800 flex items-center gap-2">
@@ -2921,7 +3435,6 @@ function render() {
         <button onclick="openProductForm()" class="px-5 py-2 bg-blue-600 text-white rounded-xl font-black text-xs shadow-lg shadow-blue-200">+ منتج جديد</button>
       </div>
     </div>
-
     <div class="flex flex-col md:flex-row gap-4 mb-6 bg-slate-50 p-4 rounded-3xl border border-slate-100">
       <div class="relative flex-1">
         <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
@@ -2933,8 +3446,19 @@ function render() {
           <option value="stock_low">⚠️ الأقل مخزوناً</option>
       </select>
     </div>
+  </div>`;
 
-    <div class="table-wrap border-none overflow-x-auto">
+      if (loading) {
+        return `${headerHtml}<div class="empty-state-container">${renderAnimatedState('')}</div>`;
+      }
+
+      if (!products.length) {
+        return `${headerHtml}<div class="empty-state-container">${renderAnimatedState('')}</div>`;
+      }
+
+      return `
+  ${headerHtml}
+  <div class="table-wrap border-none overflow-x-auto">
       <table class="w-full text-right whitespace-nowrap">
         <thead>
           <tr class="text-slate-400 text-[10px] font-black uppercase border-b border-slate-100">
@@ -2952,10 +3476,9 @@ function render() {
             <th class="pb-4 text-left px-4">إجراءات</th>
           </tr>
         </thead>
-        <tbody id="prodBody">${prodRows(State.data.products)}</tbody>
+        <tbody id="prodBody">${prodRows(products)}</tbody>
       </table>
-    </div>
-  </div>`;
+    </div>`;
     }
 
     window.filterAndSortProducts = () => {
@@ -3013,15 +3536,15 @@ function render() {
 
     window.downloadProductTemplate = () => {
       const templateData = [{
-        'الاسم': 'منتج تجريبي',
-        'sku': '101',
-        'التكلفة': 100,
-        'السعر': 200,
-        'عمولة التسويق': 10,
-        'الوزن': 500,
+        'الاسم': 'اسم المنتج',
+        'sku': 'SKU-001',
+        'التكلفة': 0,
+        'السعر': 0,
+        'عمولة التسويق': 0,
+        'الوزن': 0,
         'متوفر': 'نعم',
-        'وصف مختصر': 'وصف الباركود',
-        'وصف عام': 'وصف المتجر التفصيلي',
+        'وصف مختصر': 'عينة وصف قصير',
+        'وصف عام': 'عينة وصف تفصيلي',
         'المخزون': 100,
         // مثال لمستخدم الإكسيل يوضح كيفية وضع أكثر من رابط
         'روابط الصور': 'https://site.com/img1.jpg | https://site.com/img2.jpg | https://site.com/img3.jpg'
@@ -5078,6 +5601,12 @@ ${State.data.users.map(u => {
         </td>
         <td class="py-4 px-2">
             <div class="text-[12px]">${ROLES[u.role].label}</div>
+            <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
+              ${u.canAccessChat ? '<span class="tag">💬 وصول</span>' : ''}
+              ${u.canReplyChat ? '<span class="tag">✉️ رد</span>' : ''}
+              ${u.canViewChat ? '<span class="tag muted">👁️ مشاهدة</span>' : ''}
+              ${u.isChatAdmin ? '<span class="tag bg-blue-600 text-white">ADM</span>' : ''}
+            </div>
         </td>
         <td class="py-4 px-2">
             <button class="btn sm ghost" onclick="addUser('${u.id}')">عرض</button>
@@ -5139,6 +5668,16 @@ ${State.data.users.map(u => {
         </div>
       </div>
 
+      <div style="margin-top:14px">
+        <label style="font-weight:bold; display:block; margin-bottom:8px">🔧 صلاحيات المحادثة (Support Chat):</label>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" name="canAccessChat" ${u.canAccessChat ? 'checked' : ''}> يحق الوصول للـ Chat</label>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" name="canReplyChat" ${u.canReplyChat ? 'checked' : ''}> يحق الرد على العملاء</label>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" name="canViewChat" ${u.canViewChat ? 'checked' : ''}> يحق مشاهدة المحادثات فقط</label>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" name="isChatAdmin" ${u.isChatAdmin ? 'checked' : ''}> تحكم كامل (Admin)</label>
+        </div>
+      </div>
+
       <div class="modal-actions">
         <button type="button" class="btn" onclick="closeModal()">إلغاء</button>
         <button class="btn primary">حفظ البيانات والصلاحيات</button>
@@ -5151,6 +5690,10 @@ ${State.data.users.map(u => {
         const fd = new FormData(e.target);
         const selectedPages = Array.from(fd.getAll('pages')); // سحب كل الـ Checkboxes المختارة
         const role = fd.get('role');
+        const canAccessChat = !!fd.get('canAccessChat');
+        const canReplyChat = !!fd.get('canReplyChat');
+        const canViewChat = !!fd.get('canViewChat');
+        const isChatAdmin = !!fd.get('isChatAdmin');
 
         const userData = {
           name: fd.get('name'),
@@ -5158,7 +5701,8 @@ ${State.data.users.map(u => {
           pass: fd.get('pass'),
           phone: fd.get('phone'),
           role: role,
-          allowedPages: selectedPages
+          allowedPages: selectedPages,
+          canAccessChat, canReplyChat, canViewChat, isChatAdmin
         };
 
         if (id) {
@@ -5280,13 +5824,12 @@ ${State.data.users.map(u => {
     <div class="row"><label>اللغة</label><select onchange="State.lang=this.value;localStorage.setItem('lang',this.value);render()">
       <option value="ar" ${State.lang === 'ar' ? 'selected' : ''}>العربية</option><option value="en" ${State.lang === 'en' ? 'selected' : ''}>English</option></select></div>
     <div class="row"><label>المظهر</label><select onchange="State.theme=this.value;localStorage.setItem('theme',this.value);render()">
-      <option value="light" ${State.theme === 'light' ? 'selected' : ''}>فاتح</option><option value="dark" ${State.theme === 'dark' ? 'selected' : ''}>داكن</option></select></div>
+      <option value="light" ${State.theme === 'light' ? 'selected' : ''}>فاتح</option><option value="dark" ${State.theme === 'dark' ? 'selected' : ''}>داكن</option><option value="green" ${State.theme === 'green' ? 'selected' : ''}>أخضر</option></select></div>
     <div class="row"><label>رقم واتساب البائع</label><input value="${State.data.settings?.whatsappNumber || ''}" placeholder="2010XXXXXXXX" onchange="State.data.settings.whatsappNumber=this.value;Store.save();" class="w-full rounded-2xl p-3 bg-slate-50 border border-slate-200"></div>
     <div class="row"><label>إرسال تلقائي عبر واتساب</label><input type="checkbox" ${State.data.settings?.whatsappAutoSend ? 'checked' : ''} onchange="State.data.settings.whatsappAutoSend=this.checked;Store.save();"></div>
     <div class="row"><label>قاعدة البيانات</label>
       <div class="card" style="background:var(--surface-2)"><b>${USE_FIREBASE ? '☁️ Firebase Cloud' : '💾 LocalStorage (وضع محلي)'}</b>
       <p class="muted" style="margin:6px 0 0;font-size:12px">لتفعيل المزامنة السحابية، عدّل FIREBASE_CONFIG في الكود</p></div></div>
-    <div class="row"><button class="btn danger" onclick="if(confirm('إعادة ضبط جميع البيانات؟')){Store.reset();render();toast('تم إعادة الضبط','warning');}">🗑️ إعادة ضبط البيانات التجريبية</button></div>
     <div class="row"><button class="btn" onclick="exportCSV('orders')">📤 تصدير الطلبات CSV</button></div>
   </div>`;
     }
@@ -5299,27 +5842,39 @@ ${State.data.users.map(u => {
     function Shop() {
       window.shopCategory = window.shopCategory || 'all';
       return `
-    <div class="space-y-12">
-      <!-- شريط العنوان والبحث للموبايل -->
-      <div class="lg:hidden space-y-4">
-        <h3 class="text-3xl font-black text-slate-900 italic">Explore.</h3>
-        <div class="flex items-center bg-white border border-slate-100 rounded-[1.5rem] px-4 py-3 gap-3 soft-shadow">
-            <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
-            <input id="shopS_mobile" oninput="document.getElementById('shopS').value=this.value; renderShop()" placeholder="ابحث عن منتج..." class="bg-transparent border-none text-sm w-full focus:ring-0">
-        </div>
+    <div class="store-scene-page">
+      <div class="store-scene-bg">
+        ${Array.from({ length: 22 }, (_, i) => `<span class="rain" style="left:${6 + i * 4}%; animation-delay:${(i % 7) * 0.18}s; height:${48 + (i % 5) * 14}px"></span>`).join('')}
+        ${Array.from({ length: 10 }, (_, i) => `<span class="seed" style="left:${8 + i * 9}%; animation-delay:${0.2 + i * 0.28}s;"></span>`).join('')}
+        ${Array.from({ length: 8 }, (_, i) => `<span class="plant" style="left:${6 + i * 11}%; animation-delay:${0.15 + i * 0.3}s; animation-duration:${2.6 + (i % 3) * 0.5}s;"></span>`).join('')}
       </div>
-
-      <!-- شريط الفئات -->
-      <div class="flex flex-col gap-6">
-        <div class="flex items-center justify-between">
-            <h5 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">التصنيفات</h5>
-            <div class="h-[1px] flex-1 bg-slate-100 mx-6"></div>
+      <div class="store-scene-content space-y-12 relative z-10">
+        <!-- شريط العنوان والبحث -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between gap-3">
+            <h3 class="text-3xl font-black text-slate-100 italic">Explore.</h3>
+            <button onclick="toggleTheme()" title="تغيير لون الواجهة" class="w-11 h-11 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-slate-100 hover:bg-white/25 transition-all">
+              <i data-lucide="${State.theme === 'dark' ? 'sun' : State.theme === 'green' ? 'leaf' : 'moon'}" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div class="flex items-center bg-white/10 border border-white/10 rounded-[1.5rem] px-4 py-3 gap-3 soft-shadow backdrop-blur-md">
+              <i data-lucide="search" class="w-5 h-5 text-slate-300"></i>
+              <input id="shopS_mobile" oninput="document.getElementById('shopS').value=this.value; renderShop()" placeholder="ابحث عن منتج..." class="bg-transparent border-none text-sm w-full text-white placeholder:text-slate-400 focus:ring-0">
+          </div>
         </div>
-        <div id="shopCats" class="flex gap-3 overflow-x-auto pb-4 no-scrollbar"></div>
-      </div>
 
-      <!-- شبكة المنتجات -->
-      <div id="shopGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5"></div>
+        <!-- شريط الفئات -->
+        <div class="flex flex-col gap-6">
+          <div class="flex items-center justify-between">
+              <h5 class="text-xs font-black text-slate-300 uppercase tracking-[0.3em]">التصنيفات</h5>
+              <div class="h-[1px] flex-1 bg-white/10 mx-6"></div>
+          </div>
+          <div id="shopCats" class="flex gap-3 overflow-x-auto pb-4 no-scrollbar"></div>
+        </div>
+
+        <!-- شبكة المنتجات -->
+        <div id="shopGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5"></div>
+      </div>
     </div>
   `;
     }
@@ -5348,10 +5903,12 @@ function renderShop() {
     `).join('');
       }
 
-      // 2. فلترة المنتجات
-      /* داخل دالة renderShop */
+      if (State.loading) {
+        grid.innerHTML = renderAnimatedState('');
+        return;
+      }
 
-      // تحديث سطر الفلترة (list) ليكون هكذا:
+      // 2. فلترة المنتجات
       const list = products.filter(p => {
         const name = p.name ? p.name.toLowerCase() : '';
         const matchesSearch = name.includes(q);
@@ -5362,6 +5919,11 @@ function renderShop() {
 
         return matchesSearch && matchesCat && isVisible;
       });
+
+      if (!list.length) {
+        grid.innerHTML = renderAnimatedState('');
+        return;
+      }
 
       // 3. رسم البطاقات الاحترافية
       grid.innerHTML = list.map(p => {
@@ -5441,13 +6003,7 @@ function renderShop() {
       renderShop();
     };
 
-    // دالة إصلاح البيانات إذا كان الفيرباس فارغاً
-    window.seedAndSaveDemo = () => {
-      seedDemo(); // استدعاء الدالة التي تملأ State.data بالبيانات الافتراضية
-      Store.save(); // حفظها في فيرباس
-      render(); // إعادة التشغيل
-      toast("تم استعادة البيانات التجريبية بنجاح", "success");
-    };
+    // No fallback data helper is available; app uses Firebase state only.
 
     function addToCartQty(pid) {
       const qty = parseInt(document.getElementById('qty_' + pid)?.value || 1);
